@@ -7,7 +7,6 @@ A Foundry VTT module for the [Draw Steel](https://mcdmproductions.com) system th
 Combat Tracker replaces the default initiative sidebar with a stationary dock. Party heroes line up on the left, enemies on the right, and a center panel shows round info with turn controls. Groups (squads) display as pill containers with individual captain and minion portraits, all clickable for initiative management.
 
 <img width="1133" height="134" alt="Screenshot 2026-04-06 184842" src="https://github.com/user-attachments/assets/13787e0e-c4a9-4b6b-ab65-e620c9673a42" />
-<img width="174" height="275" alt="Screenshot 2026-04-06 184909" src="https://github.com/user-attachments/assets/40cb423a-ded6-425f-ac8b-277667962ea0" />
 
 
 ## Details
@@ -36,8 +35,9 @@ Combat Tracker replaces the default initiative sidebar with a stationary dock. P
 - **GM-only monster stats**: Monster tooltips (stamina, level, role, EV) are hidden from players
 - **Configurable**: Can be toggled off in module settings
 
+<img width="174" height="275" alt="Screenshot 2026-04-06 184909" src="https://github.com/user-attachments/assets/40cb423a-ded6-425f-ac8b-277667962ea0" />
+
 ### Additional Features
-- **Token hover integration**: Hovering a portrait highlights the corresponding token(s) on the canvas
 - **Right-click to open sheet**: Right-click any portrait to open the actor or group sheet
 - **Hide/Show drawer** — Collapse the dock to a thin toggle bar, preserving screen space
 
