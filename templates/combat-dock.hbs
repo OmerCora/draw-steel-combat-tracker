@@ -9,25 +9,28 @@
     <div class="ds-group-wrapper">
       <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
         {{#if captainData}}
-        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
+        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}} {{#if captainData.defeated}}defeated{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">
             <img src="{{captainData.img}}" alt="{{captainData.name}}" loading="lazy">
+            {{#if captainData.defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
           </div>
         </div>
         {{/if}}
         {{#each nonMinionMembers}}
-        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}} {{#if defeated}}defeated{{/if}}" data-member-id="{{id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">
             <img src="{{img}}" alt="{{name}}" loading="lazy">
+            {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
           </div>
         </div>
         {{/each}}
         {{#each minionGroups}}
         <div class="ds-minion-grid">
           {{#each this}}
-          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}} {{#if defeated}}defeated{{/if}}" data-member-id="{{id}}" data-type="combatant">
             <div class="ds-mini-portrait-img">
               <img src="{{img}}" alt="{{name}}" loading="lazy">
+              {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
             </div>
           </div>
           {{/each}}
@@ -41,6 +44,7 @@
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
       <div class="ds-portrait-img">
         <img src="{{img}}" alt="{{name}}" loading="lazy">
+        {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
       </div>
       <span class="ds-portrait-name">{{name}}</span>
       {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
@@ -99,25 +103,28 @@
     <div class="ds-group-wrapper">
       <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
         {{#if captainData}}
-        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
+        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}} {{#if captainData.defeated}}defeated{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">
             <img src="{{captainData.img}}" alt="{{captainData.name}}" loading="lazy">
+            {{#if captainData.defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
           </div>
         </div>
         {{/if}}
         {{#each nonMinionMembers}}
-        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}} {{#if defeated}}defeated{{/if}}" data-member-id="{{id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">
             <img src="{{img}}" alt="{{name}}" loading="lazy">
+            {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
           </div>
         </div>
         {{/each}}
         {{#each minionGroups}}
         <div class="ds-minion-grid">
           {{#each this}}
-          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}} {{#if defeated}}defeated{{/if}}" data-member-id="{{id}}" data-type="combatant">
             <div class="ds-mini-portrait-img">
               <img src="{{img}}" alt="{{name}}" loading="lazy">
+              {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
             </div>
           </div>
           {{/each}}
@@ -131,6 +138,7 @@
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
       <div class="ds-portrait-img">
         <img src="{{img}}" alt="{{name}}" loading="lazy">
+        {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
       </div>
       <span class="ds-portrait-name">{{name}}</span>
       {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}

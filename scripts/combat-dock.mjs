@@ -355,6 +355,7 @@ export class CombatDock {
           isMinion,
           canAct: member.initiative > 0,
           active: member === currentTurn,
+          defeated: member.isDefeated,
           tooltipData: this._getTooltipData(member.actor),
         };
 
@@ -576,12 +577,19 @@ export class CombatDock {
       el.addEventListener("mouseleave", (event) => this._onPortraitHover(event, el, false));
     }
 
-    // Group member click (activate individual), right-click and tooltip
+    // Group member click (activate individual), right-click, tooltip, and hover highlight
     for (const el of this.element.querySelectorAll(".ds-mini-portrait")) {
       el.addEventListener("click", (event) => this._onMiniPortraitClick(event, el));
       el.addEventListener("contextmenu", (event) => this._onPortraitContext(event, el));
-      el.addEventListener("mouseenter", () => this._showTooltip(el));
-      el.addEventListener("mouseleave", () => this._hideTooltip());
+      el.addEventListener("mouseenter", (event) => {
+        event.stopPropagation();
+        this._onMiniPortraitHover(event, el, true);
+        this._showTooltip(el);
+      });
+      el.addEventListener("mouseleave", (event) => {
+        this._onMiniPortraitHover(event, el, false);
+        this._hideTooltip();
+      });
     }
 
     // Mouse wheel horizontal scroll for side containers
@@ -776,6 +784,8 @@ export class CombatDock {
     const { id, type } = el.dataset;
 
     if (type === "group") {
+      // Only highlight all members if not hovering a specific mini-portrait
+      if (isHover && event.target.closest(".ds-mini-portrait")) return;
       const group = this.combat.groups.get(id);
       if (!group) return;
       for (const member of group.members) {
@@ -791,6 +801,39 @@ export class CombatDock {
       if (isHover) token._onHoverIn(event);
       else token._onHoverOut(event);
     }
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Handle hovering over an individual mini-portrait to highlight its token.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} el
+   * @param {boolean} isHover
+   */
+  _onMiniPortraitHover(event, el, isHover) {
+    if (!canvas?.ready) return;
+    const memberId = el.dataset.memberId;
+    if (!memberId) return;
+
+    // Find the parent group to unhover other members first
+    const groupEl = el.closest(".ds-group-container");
+    const groupId = groupEl?.dataset?.id;
+    const group = groupId ? this.combat.groups.get(groupId) : null;
+
+    if (isHover && group) {
+      // Unhover all group members, then hover just this one
+      for (const member of group.members) {
+        const t = canvas.tokens?.get(member.tokenId);
+        if (t?.visible) t._onHoverOut(event);
+      }
+    }
+
+    const combatant = this.combat.combatants.get(memberId);
+    const token = combatant?.token?.object;
+    if (!token?.visible) return;
+    if (isHover) token._onHoverIn(event);
+    else token._onHoverOut(event);
   }
 
   /* -------------------------------------------------- */

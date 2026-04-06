@@ -133,10 +133,10 @@ Hooks.on("updateActor", (actor, changes) => {
   if (foundry.utils.getProperty(changes, "system.stamina.value") === undefined) return;
   if (actor.hasPlayerOwner) return;
 
-  const staminaValue = actor.system?.stamina?.value ?? 0;
   for (const combatant of combat.combatants) {
     if (combatant.actorId !== actor.id) continue;
-    const shouldBeDefeated = staminaValue <= 0;
+    const combatantStamina = combatant.actor?.system?.stamina?.value ?? 0;
+    const shouldBeDefeated = combatantStamina <= 0;
     if (combatant.isDefeated !== shouldBeDefeated) {
       combatant.update({ defeated: shouldBeDefeated });
     }
