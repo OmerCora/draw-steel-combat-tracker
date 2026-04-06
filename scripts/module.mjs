@@ -19,6 +19,34 @@ Hooks.once("init", () => {
     type: Boolean,
     default: true,
   });
+
+  game.settings.register(MODULE_ID, "heroImageSource", {
+    name: `${MODULE_ID}.Settings.HeroImageSource.Name`,
+    hint: `${MODULE_ID}.Settings.HeroImageSource.Hint`,
+    scope: "client",
+    config: true,
+    type: String,
+    choices: {
+      token: `${MODULE_ID}.Settings.ImageSource.Token`,
+      portrait: `${MODULE_ID}.Settings.ImageSource.Portrait`,
+    },
+    default: "token",
+    onChange: () => ui.dsCombatDock?.scheduleRefresh(),
+  });
+
+  game.settings.register(MODULE_ID, "monsterImageSource", {
+    name: `${MODULE_ID}.Settings.MonsterImageSource.Name`,
+    hint: `${MODULE_ID}.Settings.MonsterImageSource.Hint`,
+    scope: "client",
+    config: true,
+    type: String,
+    choices: {
+      token: `${MODULE_ID}.Settings.ImageSource.Token`,
+      portrait: `${MODULE_ID}.Settings.ImageSource.Portrait`,
+    },
+    default: "token",
+    onChange: () => ui.dsCombatDock?.scheduleRefresh(),
+  });
 });
 
 /* -------------------------------------------------- */

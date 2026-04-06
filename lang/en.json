@@ -14,6 +14,18 @@
       "ShowTooltip": {
         "Name": "Show Portrait Tooltip",
         "Hint": "Display a detailed tooltip when hovering over combat portraits showing Stamina, Characteristics, Speed, and other stats."
+      },
+      "HeroImageSource": {
+        "Name": "Hero Image Source",
+        "Hint": "Choose whether hero portraits use the token image or the actor portrait image."
+      },
+      "MonsterImageSource": {
+        "Name": "Monster Image Source",
+        "Hint": "Choose whether monster portraits use the token image or the actor portrait image."
+      },
+      "ImageSource": {
+        "Token": "Token Image",
+        "Portrait": "Actor Portrait"
       }
     },
     "Tooltip": {

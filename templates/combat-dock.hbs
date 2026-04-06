@@ -1,15 +1,11 @@
 <div class="ds-combat-dock">
 
-  <button class="ds-dock-toggle" title="Toggle Combat Dock">
-    <i class="fas fa-chevron-up"></i>
-  </button>
-
   <div class="ds-dock-content">
 
   {{!-- Party Side (Left) --}}
   <div class="ds-dock-side ds-dock-party {{#if partyHighlighted}}highlighted{{/if}}">
     {{#each partyEntries}}
-    {{#if minionGroups}}
+    {{#if isGroup}}
     <div class="ds-group-wrapper">
       <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
         {{#if captainData}}
@@ -19,6 +15,13 @@
           </div>
         </div>
         {{/if}}
+        {{#each nonMinionMembers}}
+        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+          <div class="ds-mini-portrait-img">
+            <img src="{{img}}" alt="{{name}}" loading="lazy">
+          </div>
+        </div>
+        {{/each}}
         {{#each minionGroups}}
         <div class="ds-minion-grid">
           {{#each this}}
@@ -48,6 +51,9 @@
 
   {{!-- Center Info Panel --}}
   <div class="ds-dock-center">
+    <button class="ds-dock-toggle ds-dock-hide" title="Hide Combat Dock">
+      <i class="fas fa-chevron-up"></i>
+    </button>
     {{#if isGM}}
     <button class="ds-dock-close" data-action="closeCombat" data-tooltip="{{localize 'COMBAT.End'}}">
       <i class="fas fa-times"></i>
@@ -89,7 +95,7 @@
   {{!-- Enemy Side (Right) --}}
   <div class="ds-dock-side ds-dock-enemies {{#if enemyHighlighted}}highlighted{{/if}}">
     {{#each enemyEntries}}
-    {{#if minionGroups}}
+    {{#if isGroup}}
     <div class="ds-group-wrapper">
       <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
         {{#if captainData}}
@@ -99,6 +105,13 @@
           </div>
         </div>
         {{/if}}
+        {{#each nonMinionMembers}}
+        <div class="ds-mini-portrait captain {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+          <div class="ds-mini-portrait-img">
+            <img src="{{img}}" alt="{{name}}" loading="lazy">
+          </div>
+        </div>
+        {{/each}}
         {{#each minionGroups}}
         <div class="ds-minion-grid">
           {{#each this}}
@@ -127,4 +140,8 @@
   </div>
 
   </div>{{!-- .ds-dock-content --}}
+
+  <button class="ds-dock-toggle ds-dock-show" title="Show Combat Dock">
+    <i class="fas fa-chevron-down"></i>
+  </button>
 </div>

@@ -154,6 +154,13 @@ export class CombatDock {
       if (entry.captainData?.tooltipData) {
         this._tooltipData.set(entry.captainData.id, { name: entry.captainData.name, actionHint: entry.actionHint, tooltipData: entry.captainData.tooltipData });
       }
+      if (entry.nonMinionMembers) {
+        for (const m of entry.nonMinionMembers) {
+          if (m.tooltipData) {
+            this._tooltipData.set(m.id, { name: m.name, actionHint: entry.actionHint, tooltipData: m.tooltipData });
+          }
+        }
+      }
       if (entry.minionGroups) {
         for (const chunk of entry.minionGroups) {
           for (const m of chunk) {
@@ -188,6 +195,17 @@ export class CombatDock {
    * @returns {string}
    */
   _getTokenImg(combatant) {
+    const isPlayerOwned = combatant.hasPlayerOwner || combatant.disposition === 2;
+    const settingKey = isPlayerOwned ? "heroImageSource" : "monsterImageSource";
+    const usePortrait = game.settings.get(MODULE_ID, settingKey) === "portrait";
+
+    if (usePortrait) {
+      return combatant.actor?.img
+        ?? combatant.token?.texture?.src
+        ?? combatant.img
+        ?? "icons/svg/mystery-man.svg";
+    }
+
     return combatant.token?.texture?.src
       ?? combatant.actor?.prototypeToken?.texture?.src
       ?? combatant.actor?.img
@@ -321,17 +339,20 @@ export class CombatDock {
       let img = group.img;
       let tooltipActor = null;
 
-      // Separate captain and minions, group minions by name into 2x2 clusters
+      // Separate captain/non-minions and minions, group minions by name into 2x2 clusters
       let captainData = null;
+      const nonMinionMembers = [];
       const minionsByName = new Map();
 
       for (const member of group.members) {
         const isCaptain = member === captain;
+        const isMinion = member.actor?.isMinion ?? false;
         const memberData = {
           id: member.id,
           name: member.name,
           img: this._getTokenImg(member),
           isCaptain,
+          isMinion,
           canAct: member.initiative > 0,
           active: member === currentTurn,
           tooltipData: this._getTooltipData(member.actor),
@@ -341,6 +362,13 @@ export class CombatDock {
           captainData = memberData;
           img = this._getTokenImg(member);
           tooltipActor = member.actor;
+        } else if (!isMinion) {
+          // Non-minion group member — rendered at captain size
+          nonMinionMembers.push(memberData);
+          if (!tooltipActor) {
+            img = this._getTokenImg(member);
+            tooltipActor = member.actor;
+          }
         } else {
           if (!tooltipActor) {
             img = this._getTokenImg(member);
@@ -386,6 +414,7 @@ export class CombatDock {
       entries.push({
         id: group.id,
         type: "group",
+        isGroup: true,
         name: group.name,
         img: img || "icons/svg/mystery-man.svg",
         isParty,
@@ -402,6 +431,7 @@ export class CombatDock {
         cssClass: "",
         isOwner: group.isOwner,
         captainData,
+        nonMinionMembers,
         minionGroups,
       });
     }
@@ -484,8 +514,8 @@ export class CombatDock {
     for (const el of this.element.querySelectorAll(".ds-group-container")) {
       el.addEventListener("click", (event) => this._onGroupPillClick(event, el));
       el.addEventListener("contextmenu", (event) => this._onPortraitContext(event, el));
-      el.addEventListener("mouseenter", (event) => { this._onPortraitHover(event, el, true); this._showTooltip(el); });
-      el.addEventListener("mouseleave", (event) => { this._onPortraitHover(event, el, false); this._hideTooltip(); });
+      el.addEventListener("mouseenter", (event) => this._onPortraitHover(event, el, true));
+      el.addEventListener("mouseleave", (event) => this._onPortraitHover(event, el, false));
     }
 
     // Group member click (activate individual), right-click and tooltip
@@ -511,9 +541,8 @@ export class CombatDock {
       btn.addEventListener("click", (event) => this._onAction(event, btn.dataset.action));
     }
 
-    // Drawer toggle button
-    const toggleBtn = this.element.querySelector(".ds-dock-toggle");
-    if (toggleBtn) {
+    // Drawer toggle buttons (hide and show)
+    for (const toggleBtn of this.element.querySelectorAll(".ds-dock-toggle")) {
       toggleBtn.addEventListener("click", () => {
         this._collapsed = !this._collapsed;
         this.element.classList.toggle("collapsed", this._collapsed);
@@ -533,6 +562,9 @@ export class CombatDock {
     event.preventDefault();
     const { id, type } = el.dataset;
 
+    // Block activation while another turn is active (non-GM)
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
+
     if (type === "group") {
       const group = this.combat.groups.get(id);
       if (!group) return;
@@ -541,14 +573,18 @@ export class CombatDock {
       const oldValue = group.initiative;
 
       if (oldValue) {
-        // Can act: just set a member as the current turn (don't consume initiative)
+        if (hasTurn && !game.user.isGM) return;
+        // Activating: decrement group initiative, pick a member, decrement their initiative, set as turn
+        await group.update({ initiative: oldValue - 1 });
         const combatant = Array.from(group.members).find(c => c.initiative);
         if (combatant) {
+          await combatant.update({ initiative: (combatant.initiative ?? 1) - 1 });
           const newTurn = this.combat.turns.findIndex(c => c === combatant);
           await this.combat.update({ turn: newTurn }, { direction: 1 });
         }
       } else {
-        // Done: restore initiative
+        // Done: restore initiative (GM only)
+        if (!game.user.isGM) return;
         await group.update({ initiative: 1 });
       }
     } else {
@@ -559,11 +595,14 @@ export class CombatDock {
       const oldValue = combatant.initiative;
 
       if (oldValue) {
-        // Can act: just set as the current turn (don't consume initiative)
+        if (hasTurn && !game.user.isGM) return;
+        // Activating: decrement initiative and set as current turn
+        await combatant.update({ initiative: oldValue - 1 });
         const newTurn = this.combat.turns.findIndex(c => c === combatant);
         await this.combat.update({ turn: newTurn }, { direction: 1 });
       } else {
-        // Done: restore initiative
+        // Done: restore initiative (GM only)
+        if (!game.user.isGM) return;
         const newValue = combatant.actor?.system?.combat?.turns ?? 1;
         await combatant.update({ initiative: newValue });
       }
@@ -586,14 +625,22 @@ export class CombatDock {
     if (!combatant) return;
     if (!combatant.isOwner && !game.user.isGM) return;
 
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
     const oldValue = combatant.initiative;
 
     if (oldValue) {
-      // Can act: just set as the current turn (don't consume initiative)
+      if (hasTurn && !game.user.isGM) return;
+      // Activating: decrement member initiative and parent group initiative, set as turn
+      await combatant.update({ initiative: oldValue - 1 });
+      const group = combatant.group;
+      if (group && group.initiative > 0) {
+        await group.update({ initiative: group.initiative - 1 });
+      }
       const newTurn = this.combat.turns.findIndex(c => c === combatant);
       await this.combat.update({ turn: newTurn }, { direction: 1 });
     } else {
-      // Done: restore initiative
+      // Done: restore initiative (GM only)
+      if (!game.user.isGM) return;
       const newValue = combatant.actor?.system?.combat?.turns ?? 1;
       await combatant.update({ initiative: newValue });
     }
@@ -613,9 +660,24 @@ export class CombatDock {
     if (!group) return;
     if (!group.isOwner && !game.user.isGM) return;
 
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
     const oldValue = group.initiative;
-    const newValue = oldValue ? 0 : 1;
-    await group.update({ initiative: newValue });
+
+    if (oldValue) {
+      if (hasTurn && !game.user.isGM) return;
+      // Activating: decrement group initiative, pick a member, decrement their initiative, set as turn
+      await group.update({ initiative: oldValue - 1 });
+      const combatant = Array.from(group.members).find(c => c.initiative);
+      if (combatant) {
+        await combatant.update({ initiative: (combatant.initiative ?? 1) - 1 });
+        const newTurn = this.combat.turns.findIndex(c => c === combatant);
+        await this.combat.update({ turn: newTurn }, { direction: 1 });
+      }
+    } else {
+      // Done: restore initiative (GM only)
+      if (!game.user.isGM) return;
+      await group.update({ initiative: 1 });
+    }
   }
 
   /* -------------------------------------------------- */
