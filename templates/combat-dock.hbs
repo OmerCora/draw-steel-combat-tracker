@@ -35,7 +35,7 @@
         {{/each}}
       </div>
       <span class="ds-group-name">{{name}}</span>
-      {{#if staminaText}}<span class="ds-group-stamina">{{staminaText}}</span>{{/if}}
+      {{#if staminaText}}<span class="ds-group-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{else}}
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
@@ -43,7 +43,7 @@
         <img src="{{img}}" alt="{{name}}" loading="lazy">
       </div>
       <span class="ds-portrait-name">{{name}}</span>
-      {{#if staminaText}}<span class="ds-portrait-stamina">{{staminaText}}</span>{{/if}}
+      {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{/if}}
     {{/each}}
@@ -125,7 +125,7 @@
         {{/each}}
       </div>
       <span class="ds-group-name">{{name}}</span>
-      {{#if staminaText}}<span class="ds-group-stamina">{{staminaText}}</span>{{/if}}
+      {{#if staminaText}}<span class="ds-group-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{else}}
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
@@ -133,7 +133,7 @@
         <img src="{{img}}" alt="{{name}}" loading="lazy">
       </div>
       <span class="ds-portrait-name">{{name}}</span>
-      {{#if staminaText}}<span class="ds-portrait-stamina">{{staminaText}}</span>{{/if}}
+      {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{/if}}
     {{/each}}

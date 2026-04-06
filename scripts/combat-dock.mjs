@@ -149,15 +149,15 @@ export class CombatDock {
     this._tooltipData = new Map();
     for (const entry of entries) {
       if (entry.tooltipData) {
-        this._tooltipData.set(entry.id, { name: entry.name, actionHint: entry.actionHint, tooltipData: entry.tooltipData });
+        this._tooltipData.set(entry.id, { name: entry.name, actionHint: entry.actionHint, tooltipData: entry.tooltipData, isOwner: entry.isOwner });
       }
       if (entry.captainData?.tooltipData) {
-        this._tooltipData.set(entry.captainData.id, { name: entry.captainData.name, actionHint: entry.actionHint, tooltipData: entry.captainData.tooltipData });
+        this._tooltipData.set(entry.captainData.id, { name: entry.captainData.name, actionHint: entry.actionHint, tooltipData: entry.captainData.tooltipData, isOwner: entry.isOwner });
       }
       if (entry.nonMinionMembers) {
         for (const m of entry.nonMinionMembers) {
           if (m.tooltipData) {
-            this._tooltipData.set(m.id, { name: m.name, actionHint: entry.actionHint, tooltipData: m.tooltipData });
+            this._tooltipData.set(m.id, { name: m.name, actionHint: entry.actionHint, tooltipData: m.tooltipData, isOwner: entry.isOwner });
           }
         }
       }
@@ -165,7 +165,7 @@ export class CombatDock {
         for (const chunk of entry.minionGroups) {
           for (const m of chunk) {
             if (m.tooltipData) {
-              this._tooltipData.set(m.id, { name: m.name, actionHint: entry.actionHint, tooltipData: m.tooltipData });
+              this._tooltipData.set(m.id, { name: m.name, actionHint: entry.actionHint, tooltipData: m.tooltipData, isOwner: entry.isOwner });
             }
           }
         }
@@ -388,20 +388,52 @@ export class CombatDock {
         }
       }
 
-      // Group stamina text (cumulative total for all members: captain + minions)
+      // Group status text: GM sees raw stamina, players see status
       let staminaText = null;
-      let sv = 0;
-      let sm = 0;
-      for (const member of group.members) {
-        const actor = member.actor;
-        if (!actor) continue;
-        const val = foundry.utils.getProperty(actor, "system.stamina.value");
-        const max = foundry.utils.getProperty(actor, "system.stamina.max");
-        if (val != null) sv += val;
-        if (max != null) sm += max;
-      }
-      if (sm > 0) {
-        staminaText = `${sv}/${sm}`;
+      let staminaClass = "";
+      if (game.user.isGM) {
+        // GM: cumulative stamina for all groups
+        let sv = 0;
+        let sm = 0;
+        for (const member of group.members) {
+          const actor = member.actor;
+          if (!actor) continue;
+          const val = foundry.utils.getProperty(actor, "system.stamina.value");
+          const max = foundry.utils.getProperty(actor, "system.stamina.max");
+          if (val != null) sv += val;
+          if (max != null) sm += max;
+        }
+        if (sm > 0) staminaText = `${sv}/${sm}`;
+      } else if (isParty) {
+        // Players see party group stamina with temp and color
+        let sv = 0;
+        let sm = 0;
+        let tempTotal = 0;
+        for (const member of group.members) {
+          const actor = member.actor;
+          if (!actor) continue;
+          const val = foundry.utils.getProperty(actor, "system.stamina.value");
+          const max = foundry.utils.getProperty(actor, "system.stamina.max");
+          const temp = foundry.utils.getProperty(actor, "system.stamina.temporary") ?? 0;
+          if (val != null) sv += val;
+          if (max != null) sm += max;
+          tempTotal += temp;
+        }
+        if (sm > 0) {
+          staminaText = `${sv}/${sm}`;
+          if (tempTotal > 0) staminaText += ` (+${tempTotal}T)`;
+          if (sv < 0) staminaClass = "status-critical";
+          else if (sv <= sm / 2) staminaClass = "status-winded";
+          else staminaClass = "status-healthy";
+        }
+      } else {
+        // Players see monster group alive count
+        const total = group.members.size ?? group.members.length ?? 0;
+        const alive = Array.from(group.members).filter(m => !m.isDefeated).length;
+        staminaText = `${alive}/${total}`;
+        if (alive === 0) staminaClass = "status-critical";
+        else if (alive < total) staminaClass = "status-winded";
+        else staminaClass = "status-healthy";
       }
 
       // Simple tooltip (name + action hint)
@@ -426,6 +458,7 @@ export class CombatDock {
         initiative: group.initiative,
         minionLabel: null,
         staminaText,
+        staminaClass,
         actionHint,
         tooltipData: this._getTooltipData(tooltipActor),
         cssClass: "",
@@ -445,12 +478,36 @@ export class CombatDock {
       const canAct = combatant.initiative > 0;
       const active = combatant === currentTurn;
 
-      // Stamina text
+      // Status/stamina text: GM sees raw numbers, players see status
       let staminaText = null;
+      let staminaClass = "";
       const sv = foundry.utils.getProperty(combatant.actor, "system.stamina.value");
       const sm = foundry.utils.getProperty(combatant.actor, "system.stamina.max");
-      if (sv != null && sm != null) {
-        staminaText = `${sv}/${sm}`;
+      if (game.user.isGM) {
+        // GM: plain stamina for everything
+        if (sv != null && sm != null) staminaText = `${sv}/${sm}`;
+      } else if (isParty) {
+        // Players: show own stamina with temp and color
+        if (sv != null && sm != null) {
+          staminaText = `${sv}/${sm}`;
+          const temp = foundry.utils.getProperty(combatant.actor, "system.stamina.temporary") ?? 0;
+          if (temp > 0) staminaText += ` (+${temp}T)`;
+          if (sv < 0) staminaClass = "status-critical";
+          else if (sv <= sm / 2) staminaClass = "status-winded";
+          else staminaClass = "status-healthy";
+        }
+      } else {
+        // Players: monster status word
+        if (combatant.isDefeated || (sv != null && sv <= 0)) {
+          staminaText = game.i18n.localize(`${MODULE_ID}.Status.Defeated`);
+          staminaClass = "status-critical";
+        } else if (sv != null && sm != null && sv <= sm / 2) {
+          staminaText = game.i18n.localize(`${MODULE_ID}.Status.Winded`);
+          staminaClass = "status-winded";
+        } else if (sv != null && sm != null) {
+          staminaText = game.i18n.localize(`${MODULE_ID}.Status.Uninjured`);
+          staminaClass = "status-healthy";
+        }
       }
 
       // simple tooltip
@@ -474,6 +531,7 @@ export class CombatDock {
         initiative: combatant.initiative,
         minionLabel: null,
         staminaText,
+        staminaClass,
         actionHint,
         tooltipData: this._getTooltipData(combatant.actor),
         cssClass: "",
@@ -754,14 +812,16 @@ export class CombatDock {
 
     this._tooltipEl.replaceChildren();
 
-    const { name, actionHint, tooltipData } = data;
+    const { name, actionHint, tooltipData, isOwner } = data;
     const header = document.createElement("div");
     header.className = "ds-tooltip-header";
     header.textContent = name + " ";
-    const hint = document.createElement("span");
-    hint.className = "ds-tooltip-hint";
-    hint.textContent = `\u2014 ${actionHint}`;
-    header.appendChild(hint);
+    if (game.user.isGM || isOwner) {
+      const hint = document.createElement("span");
+      hint.className = "ds-tooltip-hint";
+      hint.textContent = `\u2014 ${actionHint}`;
+      header.appendChild(hint);
+    }
     this._tooltipEl.appendChild(header);
 
     const { lines, charLines } = tooltipData;

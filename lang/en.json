@@ -9,6 +9,11 @@
     "Act": "Click to Act",
     "Restore": "Click to Restore",
     "Defeated": "Defeated",
+    "Status": {
+      "Uninjured": "Uninjured",
+      "Winded": "Winded",
+      "Defeated": "Defeated"
+    },
     "Minion": "Minion",
     "Settings": {
       "ShowTooltip": {
