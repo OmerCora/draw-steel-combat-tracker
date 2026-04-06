@@ -4,50 +4,42 @@ A Foundry VTT module for the [Draw Steel](https://mcdmproductions.com) system th
 
 ## Summary
 
-Combat Tracker replaces the default initiative sidebar with a cinematic top-of-screen dock. Party heroes line up on the left, enemies on the right, and a center panel shows round info with turn controls. Groups (squads) display as pill containers with individual captain and minion portraits, all clickable for initiative management.
+Combat Tracker replaces the default initiative sidebar with a stationary dock. Party heroes line up on the left, enemies on the right, and a center panel shows round info with turn controls. Groups (squads) display as pill containers with individual captain and minion portraits, all clickable for initiative management.
 
-## Features
+<img width="1133" height="134" alt="Screenshot 2026-04-06 184842" src="https://github.com/user-attachments/assets/13787e0e-c4a9-4b6b-ab65-e620c9673a42" />
+<img width="174" height="275" alt="Screenshot 2026-04-06 184909" src="https://github.com/user-attachments/assets/40cb423a-ded6-425f-ac8b-277667962ea0" />
+
+
+## Details
 
 ### Side-Based Portrait Layout
 - **Party vs Enemies** — Heroes on the left, monsters on the right, with a center info panel
 - **Zipper initiative highlighting** — The side that should act next gets a green glow
-- **Turn labels** — Shows "Hero's Turn" or "Monsters' Turn" based on the active combatant
-
-### Visual Turn States
-- **Active** — Orange pulsing ring on the currently acting combatant
-- **Can Act** — Green border for combatants with remaining initiative
-- **Done** — Grayed out for combatants who have used their turn
-- **Defeated** — Dark with red border for defeated combatants
+- Monsters are automatically marked defeated when stamina reaches 0
 
 ### Squad / Group Display
-- **Captain portrait** — Larger circle with gold border inside a pill container
-- **Minion portraits** — Smaller circles in 2x2 grid clusters, grouped by name
-- **Group name & stamina** — Displayed below the pill with cumulative HP across all members
-- **Individual member states** — Each mini-portrait shows its own green/orange/gray state
-- **Pill click** — Click the group pill to toggle the entire group's act/restore state
+- **Captain portrait**: Larger circle with gold border inside a pill container
+- **Minion portraits**: Smaller circles in 2x2 grid clusters, grouped by name
+- **Group name & stamina**: Displayed below the pill with cumulative HP across all members (GM only)
+- **Individual member states**: Each mini-portrait shows its own green/orange/gray state
+- **Pill click**: Click the group pill to toggle the entire group's act/restore state
 
 ### Initiative Management
-- **Click to pass turn** — Click any can-act portrait to set them as active without consuming their initiative
-- **Click to restore** — Click any done portrait to restore their initiative
-- **End Turn button** — Properly ends the current turn and marks the combatant as done
-- **Next Round** — Appears when all combatants have acted (GM only)
+- **Click to pass turn**:  Click any can-act portrait to set them as active without consuming their initiative
+- **Click to restore**:  Click any done portrait to restore their initiative
+- **End Turn button**:  Properly ends the current turn and marks the combatant as done
+- **Next Round**: Appears when all combatants have acted (GM only)
 
-### Auto-Defeat
-- Monsters are automatically marked defeated when stamina reaches 0
-- Defeated status is automatically removed if stamina is restored above 0
-
-### Tooltip System
-- **Hover tooltips** — Detailed floating tooltip with stamina, heroic resource, surges, and characteristics
-- **Two-column layout** — Stats on the left, characteristics on the right with a divider
-- **GM-only monster stats** — Monster tooltips (stamina, level, role, EV) are hidden from players
-- **Configurable** — Can be toggled off in module settings
+### Tooltip
+- **Hover tooltips**  Detailed floating tooltip with stamina, heroic resource, surges, and characteristics
+- **Two-column layout**: Stats on the left, characteristics on the right with a divider
+- **GM-only monster stats**: Monster tooltips (stamina, level, role, EV) are hidden from players
+- **Configurable**: Can be toggled off in module settings
 
 ### Additional Features
-- **Token hover integration** — Hovering a portrait highlights the corresponding token(s) on the canvas
-- **Right-click to open sheet** — Right-click any portrait to open the actor or group sheet
-- **Mouse wheel scrolling** — Scroll horizontally through side containers with the mouse wheel
+- **Token hover integration**: Hovering a portrait highlights the corresponding token(s) on the canvas
+- **Right-click to open sheet**: Right-click any portrait to open the actor or group sheet
 - **Hide/Show drawer** — Collapse the dock to a thin toggle bar, preserving screen space
-- **GM controls** — Previous/Next round buttons, End Combat button
 
 ## Installation
 
