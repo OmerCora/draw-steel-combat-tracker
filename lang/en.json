@@ -1,0 +1,34 @@
+{
+  "draw-steel-combat-tracker": {
+    "Round": "Round",
+    "HeroTurn": "Hero's Turn",
+    "VillainTurn": "Monsters' Turn",
+    "EndTurn": "End Turn",
+    "NextRound": "Next Round",
+    "RoundComplete": "Round Complete",
+    "Act": "Click to Act",
+    "Restore": "Click to Restore",
+    "Defeated": "Defeated",
+    "Minion": "Minion",
+    "Settings": {
+      "ShowTooltip": {
+        "Name": "Show Portrait Tooltip",
+        "Hint": "Display a detailed tooltip when hovering over combat portraits showing Stamina, Characteristics, Speed, and other stats."
+      }
+    },
+    "Tooltip": {
+      "Stamina": "Stamina",
+      "TempStamina": "Temp",
+      "HeroicResource": "Heroic Resource",
+      "Surges": "Surge",
+      "Characteristics": "Characteristics",
+      "Size": "Size",
+      "Stability": "Stability",
+      "Speed": "Speed",
+      "Disengage": "Disengage",
+      "Level": "Level",
+      "Role": "Role",
+      "EV": "EV"
+    }
+  }
+}

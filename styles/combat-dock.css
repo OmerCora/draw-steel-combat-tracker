@@ -1,0 +1,587 @@
+/* ==============================================
+   Draw Steel Combat Tracker - Combat Dock
+   ============================================== */
+
+/* -----------------------------------------------
+   Dock Container
+   ----------------------------------------------- */
+
+#ds-combat-dock {
+  pointer-events: all;
+  width: 100%;
+  z-index: 100;
+}
+
+.ds-combat-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Drawer content wrapper */
+.ds-dock-content {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  padding: 6px 12px;
+  min-height: 80px;
+  width: 100%;
+  overflow: hidden;
+  max-height: 300px;
+  transition: max-height 0.3s ease, min-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+}
+
+/* Collapsed state */
+#ds-combat-dock.collapsed .ds-dock-content {
+  max-height: 0;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+#ds-combat-dock.collapsed .ds-combat-dock {
+  border-bottom: none;
+}
+
+#ds-combat-dock.collapsed .ds-dock-toggle i {
+  transform: rotate(180deg);
+}
+
+/* Toggle button */
+.ds-dock-toggle {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 1px 24px;
+  font-size: 10px;
+  line-height: 1;
+  width: 100%;
+  transition: color 0.2s, background 0.2s;
+}
+
+.ds-dock-toggle:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ds-dock-toggle i {
+  transition: transform 0.3s ease;
+}
+
+/* -----------------------------------------------
+   Side Containers (Party Left, Enemies Right)
+   ----------------------------------------------- */
+
+.ds-dock-side {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  padding: 4px 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.ds-dock-party {
+  justify-content: flex-end;
+}
+
+.ds-dock-enemies {
+  justify-content: flex-start;
+}
+
+/* Side highlight when it's that side's turn to pick */
+.ds-dock-side.highlighted {
+  background: rgba(46, 204, 113, 0.06);
+  border-radius: 8px;
+}
+
+/* Scrollbar (webkit) */
+.ds-dock-side::-webkit-scrollbar {
+  height: 3px;
+}
+
+.ds-dock-side::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ds-dock-side::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* -----------------------------------------------
+   Center Info Panel
+   ----------------------------------------------- */
+
+.ds-dock-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 20px;
+  min-width: 160px;
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Close / End Combat button (top-right corner) */
+.ds-dock-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.ds-dock-close:hover {
+  color: #ff6666;
+}
+
+/* Round number row */
+.ds-dock-round {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-round-number {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--color-text-light-highlight, #f0f0f0);
+  white-space: nowrap;
+}
+
+.ds-round-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.ds-round-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-light-highlight, #f0f0f0);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Turn indicator label */
+.ds-dock-turn {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Action buttons container */
+.ds-dock-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.ds-dock-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text-light-highlight, #f0f0f0);
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.ds-dock-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.ds-dock-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* End Turn – red tint */
+.ds-dock-btn.ds-end-turn:not(:disabled) {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
+.ds-dock-btn.ds-end-turn:hover:not(:disabled) {
+  background: rgba(231, 76, 60, 0.35);
+}
+
+/* Next Round – green tint */
+.ds-dock-btn.ds-next-round {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: rgba(46, 204, 113, 0.45);
+}
+
+.ds-dock-btn.ds-next-round:hover {
+  background: rgba(46, 204, 113, 0.35);
+}
+
+/* -----------------------------------------------
+   Portrait Component
+   ----------------------------------------------- */
+
+.ds-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.ds-portrait:hover {
+  transform: translateY(-2px);
+}
+
+.ds-portrait-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(128, 128, 128, 0.4);
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.ds-portrait-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.ds-portrait-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.ds-portrait-stamina {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}
+
+/* Squad label (minion count) — below portrait, outside circle */
+.ds-portrait-label {
+  font-size: 9px;
+  color: rgba(255, 200, 100, 0.9);
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* -----------------------------------------------
+   Portrait States
+   ----------------------------------------------- */
+
+/* Can Act — subtle ready indicator */
+.ds-portrait.can-act .ds-portrait-img {
+  border-color: rgba(46, 204, 113, 0.5);
+}
+
+/* Can Act + side highlighted — prominent glow */
+.ds-dock-side.highlighted .ds-portrait.can-act .ds-portrait-img {
+  border-color: rgba(46, 204, 113, 0.9);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5),
+              0 0 20px rgba(46, 204, 113, 0.15);
+}
+
+/* Active — currently taking a turn (orange ring with pulse) */
+.ds-portrait.active .ds-portrait-img {
+  border-color: #f39c12;
+  box-shadow: 0 0 12px rgba(243, 156, 18, 0.6),
+              0 0 24px rgba(243, 156, 18, 0.15);
+  animation: ds-active-pulse 2s ease-in-out infinite;
+}
+
+/* Done — has used their turn this round (grayed out) */
+.ds-portrait.done .ds-portrait-img {
+  filter: grayscale(0.8) brightness(0.5);
+  border-color: rgba(128, 128, 128, 0.2);
+}
+
+.ds-portrait.done .ds-portrait-name,
+.ds-portrait.done .ds-portrait-stamina {
+  opacity: 0.5;
+}
+
+/* Defeated */
+.ds-portrait.defeated .ds-portrait-img {
+  filter: grayscale(1) brightness(0.3);
+  border-color: rgba(180, 30, 30, 0.4);
+}
+
+.ds-portrait.defeated .ds-portrait-name,
+.ds-portrait.defeated .ds-portrait-stamina {
+  opacity: 0.35;
+}
+
+/* Hidden combatant (GM-only visibility) */
+.ds-portrait.hidden-combatant {
+  opacity: 0.5;
+}
+
+.ds-portrait.hidden-combatant .ds-portrait-img {
+  border-style: dashed;
+}
+
+/* -----------------------------------------------
+   Animations
+   ----------------------------------------------- */
+
+@keyframes ds-active-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.4),
+                0 0 16px rgba(243, 156, 18, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(243, 156, 18, 0.7),
+                0 0 32px rgba(243, 156, 18, 0.25);
+  }
+}
+
+/* -----------------------------------------------
+   Floating Tooltip (appended to body)
+   ----------------------------------------------- */
+
+.ds-floating-tooltip {
+  display: none;
+  position: fixed;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 180px;
+  max-width: 280px;
+  z-index: 10000;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.ds-tooltip-header {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-text-light-highlight, #f0f0f0);
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-tooltip-hint {
+  font-weight: normal;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ds-tooltip-line {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Two-column tooltip body */
+.ds-tooltip-body {
+  display: flex;
+  gap: 0;
+}
+
+.ds-tooltip-col {
+  flex: 0 0 auto;
+}
+
+.ds-tooltip-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 8px;
+  align-self: stretch;
+}
+
+/* -----------------------------------------------
+   Group Container (Squad display)
+   ----------------------------------------------- */
+
+/* Wrapper: column layout for pill + name/stamina below */
+.ds-group-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.ds-group-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  border-radius: 28px;
+  padding: 4px 8px;
+  min-height: 62px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.3s ease, border-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.ds-group-wrapper:hover {
+  transform: translateY(-2px);
+}
+
+/* Group states — mirror portrait states */
+.ds-group-container.can-act {
+  border-color: rgba(46, 204, 113, 0.5);
+}
+
+.ds-dock-side.highlighted .ds-group-container.can-act {
+  border-color: rgba(46, 204, 113, 0.9);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+.ds-group-container.active {
+  border-color: #f39c12;
+  box-shadow: 0 0 12px rgba(243, 156, 18, 0.4);
+  animation: ds-active-pulse 2s ease-in-out infinite;
+}
+
+.ds-group-container.done {
+  opacity: 0.5;
+}
+
+.ds-group-container.defeated {
+  opacity: 0.3;
+  border-color: rgba(180, 30, 30, 0.4);
+}
+
+/* Group name/stamina below the pill */
+.ds-group-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.ds-group-stamina {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}
+
+/* Mini Portrait (group members — shared) */
+
+.ds-mini-portrait {
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.ds-mini-portrait:hover {
+  transform: scale(1.1);
+}
+
+/* Captain portrait — 42px to match 0.9x of the 56px non-grouped circle */
+.ds-mini-portrait.captain .ds-mini-portrait-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 215, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s ease;
+}
+
+/* Minion portrait — 20px in 2x2 grid */
+.ds-mini-portrait.minion .ds-mini-portrait-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s ease;
+}
+
+.ds-mini-portrait-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* 2x2 grid for minion clusters (up to 4 minions sharing same name) */
+.ds-minion-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Mini portrait individual states */
+.ds-mini-portrait.can-act .ds-mini-portrait-img {
+  border-color: rgba(46, 204, 113, 0.7);
+}
+
+.ds-mini-portrait.active .ds-mini-portrait-img {
+  border-color: #f39c12;
+  box-shadow: 0 0 8px rgba(243, 156, 18, 0.5);
+  animation: ds-active-pulse 2s ease-in-out infinite;
+}
+
+/* Apply group state effects to mini portraits */
+.ds-group-container.done .ds-mini-portrait:not(.can-act) .ds-mini-portrait-img {
+  filter: grayscale(0.8) brightness(0.5);
+}
+
+.ds-group-container.defeated .ds-mini-portrait-img {
+  filter: grayscale(1) brightness(0.3);
+}

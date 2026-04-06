@@ -1,0 +1,47 @@
+{
+  "id": "draw-steel-combat-tracker",
+  "title": "Draw Steel - Combat Tracker",
+  "description": "A visual combat tracker overlay for the Draw Steel system, featuring side-based portrait lists with zipper initiative support.",
+  "version": "1.0.0",
+  "manifest": "https://github.com/OmerCora/draw-steel-combat-tracker/releases/latest/download/module.json",
+  "download": "https://github.com/OmerCora/draw-steel-combat-tracker/releases/download/v1.0.0/draw-steel-combat-tracker.zip",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13.351"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "draw-steel",
+        "type": "system",
+        "compatibility": {
+          "minimum": "0.9.0",
+          "verified": "0.11.1"
+        }
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "OmerCora",
+      "url": "https://www.coraomer.com"
+    }
+  ],
+  "esmodules": [
+    "scripts/module.mjs"
+  ],
+  "styles": [
+    "styles/combat-dock.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "license": "MIT",
+  "url": "https://github.com/OmerCora/draw-steel-combat-tracker",
+  "bugs": "https://github.com/OmerCora/draw-steel-combat-tracker/issues",
+  "flags": {}
+}

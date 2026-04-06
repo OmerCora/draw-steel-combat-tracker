@@ -1,0 +1,130 @@
+<div class="ds-combat-dock">
+
+  <button class="ds-dock-toggle" title="Toggle Combat Dock">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <div class="ds-dock-content">
+
+  {{!-- Party Side (Left) --}}
+  <div class="ds-dock-side ds-dock-party {{#if partyHighlighted}}highlighted{{/if}}">
+    {{#each partyEntries}}
+    {{#if minionGroups}}
+    <div class="ds-group-wrapper">
+      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
+        {{#if captainData}}
+        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
+          <div class="ds-mini-portrait-img">
+            <img src="{{captainData.img}}" alt="{{captainData.name}}" loading="lazy">
+          </div>
+        </div>
+        {{/if}}
+        {{#each minionGroups}}
+        <div class="ds-minion-grid">
+          {{#each this}}
+          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+            <div class="ds-mini-portrait-img">
+              <img src="{{img}}" alt="{{name}}" loading="lazy">
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      <span class="ds-group-name">{{name}}</span>
+      {{#if staminaText}}<span class="ds-group-stamina">{{staminaText}}</span>{{/if}}
+    </div>
+    {{else}}
+    <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+      <div class="ds-portrait-img">
+        <img src="{{img}}" alt="{{name}}" loading="lazy">
+      </div>
+      <span class="ds-portrait-name">{{name}}</span>
+      {{#if staminaText}}<span class="ds-portrait-stamina">{{staminaText}}</span>{{/if}}
+    </div>
+    {{/if}}
+    {{/each}}
+  </div>
+
+  {{!-- Center Info Panel --}}
+  <div class="ds-dock-center">
+    {{#if isGM}}
+    <button class="ds-dock-close" data-action="closeCombat" data-tooltip="{{localize 'COMBAT.End'}}">
+      <i class="fas fa-times"></i>
+    </button>
+    {{/if}}
+
+    <div class="ds-dock-round">
+      {{#if isGM}}
+      <button class="ds-round-btn" data-action="prevRound" data-tooltip="{{localize 'COMBAT.RoundPrev'}}">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      {{/if}}
+      <span class="ds-round-number">{{localize "draw-steel-combat-tracker.Round"}} {{round}}</span>
+      {{#if isGM}}
+      <button class="ds-round-btn" data-action="nextRound" data-tooltip="{{localize 'COMBAT.RoundNext'}}">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      {{/if}}
+    </div>
+
+    {{#if turnLabel}}
+    <div class="ds-dock-turn">{{turnLabel}}</div>
+    {{/if}}
+
+    <div class="ds-dock-actions">
+      <button class="ds-dock-btn ds-end-turn" data-action="endTurn" {{#unless canEndTurn}}disabled{{/unless}}>
+        {{localize "draw-steel-combat-tracker.EndTurn"}}
+      </button>
+      {{#if allActed}}
+      {{#if isGM}}
+      <button class="ds-dock-btn ds-next-round" data-action="nextRound">
+        {{localize "draw-steel-combat-tracker.NextRound"}}
+      </button>
+      {{/if}}
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- Enemy Side (Right) --}}
+  <div class="ds-dock-side ds-dock-enemies {{#if enemyHighlighted}}highlighted{{/if}}">
+    {{#each enemyEntries}}
+    {{#if minionGroups}}
+    <div class="ds-group-wrapper">
+      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
+        {{#if captainData}}
+        <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
+          <div class="ds-mini-portrait-img">
+            <img src="{{captainData.img}}" alt="{{captainData.name}}" loading="lazy">
+          </div>
+        </div>
+        {{/if}}
+        {{#each minionGroups}}
+        <div class="ds-minion-grid">
+          {{#each this}}
+          <div class="ds-mini-portrait minion {{#if active}}active{{/if}} {{#if canAct}}can-act{{/if}}" data-member-id="{{id}}" data-type="combatant">
+            <div class="ds-mini-portrait-img">
+              <img src="{{img}}" alt="{{name}}" loading="lazy">
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      <span class="ds-group-name">{{name}}</span>
+      {{#if staminaText}}<span class="ds-group-stamina">{{staminaText}}</span>{{/if}}
+    </div>
+    {{else}}
+    <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+      <div class="ds-portrait-img">
+        <img src="{{img}}" alt="{{name}}" loading="lazy">
+      </div>
+      <span class="ds-portrait-name">{{name}}</span>
+      {{#if staminaText}}<span class="ds-portrait-stamina">{{staminaText}}</span>{{/if}}
+    </div>
+    {{/if}}
+    {{/each}}
+  </div>
+
+  </div>{{!-- .ds-dock-content --}}
+</div>
