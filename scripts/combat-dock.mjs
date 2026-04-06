@@ -330,7 +330,7 @@ export class CombatDock {
         groupedIds.add(member.id);
       }
 
-      const isParty = group.hasPlayerOwner;
+      const isParty = group.hasPlayerOwner || group.disposition === 2;
       const canAct = group.initiative > 0;
       const active = Array.from(group.members).some(m => m === currentTurn);
 
@@ -626,52 +626,27 @@ export class CombatDock {
    */
   async _onPortraitClick(event, el) {
     event.preventDefault();
-    const { id, type } = el.dataset;
+    const { id } = el.dataset;
+
+    const combatant = this.combat.combatants.get(id);
+    if (!combatant) return;
+    if (!combatant.isOwner && !game.user.isGM) return;
 
     // Block activation while another turn is active (non-GM)
     const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
+    const oldValue = combatant.initiative;
 
-    if (type === "group") {
-      const group = this.combat.groups.get(id);
-      if (!group) return;
-      if (!group.isOwner && !game.user.isGM) return;
-
-      const oldValue = group.initiative;
-
-      if (oldValue) {
-        if (hasTurn && !game.user.isGM) return;
-        // Activating: decrement group initiative, pick a member, decrement their initiative, set as turn
-        await group.update({ initiative: oldValue - 1 });
-        const combatant = Array.from(group.members).find(c => c.initiative);
-        if (combatant) {
-          await combatant.update({ initiative: (combatant.initiative ?? 1) - 1 });
-          const newTurn = this.combat.turns.findIndex(c => c === combatant);
-          await this.combat.update({ turn: newTurn }, { direction: 1 });
-        }
-      } else {
-        // Done: restore initiative (GM only)
-        if (!game.user.isGM) return;
-        await group.update({ initiative: 1 });
-      }
+    if (oldValue) {
+      if (hasTurn && !game.user.isGM) return;
+      // Activating: decrement initiative and set as current turn
+      await combatant.update({ initiative: oldValue - 1 });
+      const newTurn = this.combat.turns.findIndex(c => c === combatant);
+      await this.combat.update({ turn: newTurn }, { direction: 1 });
     } else {
-      const combatant = this.combat.combatants.get(id);
-      if (!combatant) return;
-      if (!combatant.isOwner && !game.user.isGM) return;
-
-      const oldValue = combatant.initiative;
-
-      if (oldValue) {
-        if (hasTurn && !game.user.isGM) return;
-        // Activating: decrement initiative and set as current turn
-        await combatant.update({ initiative: oldValue - 1 });
-        const newTurn = this.combat.turns.findIndex(c => c === combatant);
-        await this.combat.update({ turn: newTurn }, { direction: 1 });
-      } else {
-        // Done: restore initiative (GM only)
-        if (!game.user.isGM) return;
-        const newValue = combatant.actor?.system?.combat?.turns ?? 1;
-        await combatant.update({ initiative: newValue });
-      }
+      // Done: restore initiative (GM only)
+      if (!game.user.isGM) return;
+      const newValue = combatant.actor?.system?.combat?.turns ?? 1;
+      await combatant.update({ initiative: newValue });
     }
   }
 

@@ -144,6 +144,20 @@ Hooks.on("updateActor", (actor, changes) => {
 });
 
 /* -------------------------------------------------- */
+/*   Active Effect Hooks (status effect changes)      */
+/* -------------------------------------------------- */
+
+Hooks.on("createActiveEffect", (effect) => {
+  if (!ui.dsCombatDock) return;
+  if (effect.statuses?.has("dead")) ui.dsCombatDock.scheduleRefresh();
+});
+
+Hooks.on("deleteActiveEffect", (effect) => {
+  if (!ui.dsCombatDock) return;
+  if (effect.statuses?.has("dead")) ui.dsCombatDock.scheduleRefresh();
+});
+
+/* -------------------------------------------------- */
 /*   Combatant Group Change Hooks                     */
 /* -------------------------------------------------- */
 
