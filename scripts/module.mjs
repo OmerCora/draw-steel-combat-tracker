@@ -47,6 +47,24 @@ Hooks.once("init", () => {
     default: "token",
     onChange: () => ui.dsCombatDock?.scheduleRefresh(),
   });
+
+  game.settings.register(MODULE_ID, "capSquadStamina", {
+    name: `${MODULE_ID}.Settings.CapSquadStamina.Name`,
+    hint: `${MODULE_ID}.Settings.CapSquadStamina.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, "deadOverlay", {
+    name: `${MODULE_ID}.Settings.DeadOverlay.Name`,
+    hint: `${MODULE_ID}.Settings.DeadOverlay.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
 });
 
 /* -------------------------------------------------- */
@@ -119,6 +137,23 @@ Hooks.on("deleteCombatant", (combatant) => {
 });
 
 /* -------------------------------------------------- */
+/*   Pre-Update Actor Hook (stamina clamping)         */
+/* -------------------------------------------------- */
+
+Hooks.on("preUpdateActor", (actor, changes) => {
+  if (!game.user.isGM) return;
+  if (!game.settings.get(MODULE_ID, "capSquadStamina")) return;
+
+  const newStamina = foundry.utils.getProperty(changes, "system.stamina.value");
+  if (newStamina === undefined) return;
+
+  const max = actor.system?.stamina?.max;
+  if (max != null && newStamina > max) {
+    foundry.utils.setProperty(changes, "system.stamina.value", max);
+  }
+});
+
+/* -------------------------------------------------- */
 /*   Actor Update Hook                                */
 /* -------------------------------------------------- */
 
@@ -146,6 +181,14 @@ Hooks.on("updateActor", (actor, changes) => {
 /* -------------------------------------------------- */
 /*   Active Effect Hooks (status effect changes)      */
 /* -------------------------------------------------- */
+
+// Force "dead" status to always render as a full-token overlay
+Hooks.on("preCreateActiveEffect", (effect) => {
+  if (!game.settings.get(MODULE_ID, "deadOverlay")) return;
+  if (!effect.statuses?.has("dead")) return;
+  if (effect.getFlag("core", "overlay")) return;
+  effect.updateSource({ "flags.core.overlay": true });
+});
 
 Hooks.on("createActiveEffect", (effect) => {
   if (!ui.dsCombatDock) return;

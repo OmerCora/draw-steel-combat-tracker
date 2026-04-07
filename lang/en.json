@@ -31,6 +31,14 @@
       "ImageSource": {
         "Token": "Token Image",
         "Portrait": "Actor Portrait"
+      },
+      "CapSquadStamina": {
+        "Name": "Cap Stamina at Maximum",
+        "Hint": "Prevent stamina from being set above the actor's maximum value. Useful for linked minion squads whose cumulative stamina can be accidentally over-set."
+      },
+      "DeadOverlay": {
+        "Name": "Dead Status as Overlay",
+        "Hint": "When the Dead status effect is applied via the token HUD, render it as a full-token overlay instead of a small icon in the corner."
       }
     },
     "Tooltip": {
