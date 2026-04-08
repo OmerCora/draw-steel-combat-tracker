@@ -219,17 +219,17 @@ async function _checkMinionDeaths(group) {
   const poolMax = group.system.staminaMax;
   const currentPool = group.system.staminaValue;
   const damageTaken = Math.max(0, poolMax - currentPool);
+  const currentlyDead = minionMembers.filter(m => m.isDefeated).length;
   let expectedDead = Math.min(minionMembers.length, Math.floor(damageTaken / individualMax));
 
-  // AoE rule: only targeted minions can die from this damage, no matter how much overkill
+  // AoE rule: only alive targeted minions can die from this AoE, plus any already dead stay dead
   const targetedInGroup = minionMembers.filter(m =>
     [...game.user.targets].some(t => t.document.id === m.tokenId)
   );
   if (targetedInGroup.length > 0) {
-    expectedDead = Math.min(expectedDead, targetedInGroup.length);
+    const aliveTargeted = targetedInGroup.filter(m => !m.isDefeated).length;
+    expectedDead = Math.min(expectedDead, currentlyDead + aliveTargeted);
   }
-
-  const currentlyDead = minionMembers.filter(m => m.isDefeated).length;
 
   let additionalDeaths = expectedDead - currentlyDead;
   if (additionalDeaths <= 0) return;
@@ -375,12 +375,21 @@ Hooks.on("updateActor", (actor, changes) => {
 /*   Active Effect Hooks (status effect changes)      */
 /* -------------------------------------------------- */
 
-// Force "dead" status to always render as a full-token overlay
+// Force "dead" status to always render as a full-token overlay and prevent duplicates
 Hooks.on("preCreateActiveEffect", (effect) => {
   if (!game.settings.get(MODULE_ID, "deadOverlay")) return;
   if (!effect.statuses?.has("dead")) return;
-  if (effect.getFlag("core", "overlay")) return;
-  effect.updateSource({ "flags.core.overlay": true });
+
+  // If the actor already has a "dead" effect, block this duplicate
+  const actor = effect.parent;
+  if (actor?.documentName === "Actor") {
+    const existing = actor.effects.find(e => e.statuses.has("dead"));
+    if (existing) return false;
+  }
+
+  if (!effect.getFlag("core", "overlay")) {
+    effect.updateSource({ "flags.core.overlay": true });
+  }
 });
 
 Hooks.on("createActiveEffect", (effect) => {
