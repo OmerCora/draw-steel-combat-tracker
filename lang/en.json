@@ -15,6 +15,8 @@
       "Defeated": "Defeated"
     },
     "Minion": "Minion",
+    "MinionPickPrompt": "Select {count} minion(s) to mark as dead in {name}. Press Escape to cancel.",
+    "MinionPickCancelled": "Minion selection cancelled.",
     "Settings": {
       "ShowTooltip": {
         "Name": "Show Portrait Tooltip",
@@ -33,12 +35,16 @@
         "Portrait": "Actor Portrait"
       },
       "CapSquadStamina": {
-        "Name": "Cap Stamina at Maximum",
-        "Hint": "Prevent stamina from being set above the actor's maximum value. Useful for linked minion squads whose cumulative stamina can be accidentally over-set."
+        "Name": "Cap Squad Stamina at Maximum",
+        "Hint": "Prevent a squad's shared stamina pool from being set above its maximum (the sum of all minion members' individual stamina). Only affects squad stamina on CombatantGroups."
       },
       "DeadOverlay": {
         "Name": "Dead Status as Overlay",
         "Hint": "When the Dead status effect is applied via the token HUD, render it as a full-token overlay instead of a small icon in the corner."
+      },
+      "AutoMinionDeath": {
+        "Name": "Automated Minion Death",
+        "Hint": "Automatically mark minions as dead when the squad's stamina pool drops below death thresholds. When excess damage kills additional minions, prompts the GM to pick which minions die by clicking their tokens."
       }
     },
     "Tooltip": {

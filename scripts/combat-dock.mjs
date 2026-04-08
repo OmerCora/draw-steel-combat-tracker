@@ -577,6 +577,27 @@ export class CombatDock {
       el.addEventListener("mouseleave", (event) => this._onPortraitHover(event, el, false));
     }
 
+    // Group wrapper interactions (labels below the pill act like the pill itself)
+    for (const el of this.element.querySelectorAll(".ds-group-wrapper")) {
+      const groupEl = el.querySelector(".ds-group-container");
+      if (!groupEl) continue;
+      el.addEventListener("click", (event) => {
+        if (event.target.closest(".ds-group-container")) return;
+        this._onGroupPillClick(event, groupEl);
+      });
+      el.addEventListener("contextmenu", (event) => {
+        if (event.target.closest(".ds-group-container")) return;
+        this._onPortraitContext(event, groupEl);
+      });
+      el.addEventListener("mouseenter", (event) => {
+        if (event.target.closest(".ds-group-container")) return;
+        this._onPortraitHover(event, groupEl, true);
+      });
+      el.addEventListener("mouseleave", (event) => {
+        this._onPortraitHover(event, groupEl, false);
+      });
+    }
+
     // Group member click (activate individual), right-click, tooltip, and hover highlight
     for (const el of this.element.querySelectorAll(".ds-mini-portrait")) {
       el.addEventListener("click", (event) => this._onMiniPortraitClick(event, el));

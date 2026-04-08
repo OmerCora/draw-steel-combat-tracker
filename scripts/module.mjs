@@ -65,6 +65,15 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false,
   });
+
+  game.settings.register(MODULE_ID, "autoMinionDeath", {
+    name: `${MODULE_ID}.Settings.AutoMinionDeath.Name`,
+    hint: `${MODULE_ID}.Settings.AutoMinionDeath.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
 });
 
 /* -------------------------------------------------- */
@@ -137,21 +146,203 @@ Hooks.on("deleteCombatant", (combatant) => {
 });
 
 /* -------------------------------------------------- */
-/*   Pre-Update Actor Hook (stamina clamping)         */
+/*   Pre-Update CombatantGroup Hook (squad stamina)   */
 /* -------------------------------------------------- */
 
-Hooks.on("preUpdateActor", (actor, changes) => {
+Hooks.on("preUpdateCombatantGroup", (group, changes) => {
   if (!game.user.isGM) return;
   if (!game.settings.get(MODULE_ID, "capSquadStamina")) return;
 
-  const newStamina = foundry.utils.getProperty(changes, "system.stamina.value");
+  const newStamina = foundry.utils.getProperty(changes, "system.staminaValue");
   if (newStamina === undefined) return;
 
-  const max = actor.system?.stamina?.max;
+  const max = group.system?.staminaMax;
   if (max != null && newStamina > max) {
-    foundry.utils.setProperty(changes, "system.stamina.value", max);
+    foundry.utils.setProperty(changes, "system.staminaValue", max);
   }
 });
+
+// AoE damage cap: when targets exist in the group, limit pool damage to targetCount × individualMax
+Hooks.on("preUpdateCombatantGroup", (group, changes) => {
+  if (!game.user.isGM) return;
+  if (!game.settings.get(MODULE_ID, "autoMinionDeath")) return;
+
+  const newStamina = foundry.utils.getProperty(changes, "system.staminaValue");
+  if (newStamina === undefined) return;
+
+  const minionMembers = Array.from(group.members).filter(m => m.actor?.isMinion);
+  if (!minionMembers.length) return;
+
+  const individualMax = minionMembers[0].actor?.system?.stamina?.max;
+  if (!individualMax || individualMax <= 0) return;
+
+  // Count targeted tokens in this group (alive OR dead — dead targeted ones died from this AoE)
+  const targetIds = new Set([...game.user.targets].map(t => t.document.id));
+  const targetedInGroup = minionMembers.filter(m => targetIds.has(m.tokenId));
+  if (!targetedInGroup.length) return; // no targets in group — don't cap (manual edit)
+
+  // Pre-existing dead = dead members NOT in the target set (died before this AoE)
+  const preExistingDead = minionMembers.filter(m => m.isDefeated && !targetIds.has(m.tokenId)).length;
+  const poolMax = group.system?.staminaMax;
+  const maxTotalDead = preExistingDead + targetedInGroup.length;
+  const minAllowedStamina = poolMax - (maxTotalDead * individualMax);
+
+  if (newStamina < minAllowedStamina) {
+    foundry.utils.setProperty(changes, "system.staminaValue", minAllowedStamina);
+  }
+});
+
+/* -------------------------------------------------- */
+/*   Automated Minion Death                           */
+/* -------------------------------------------------- */
+
+/** @type {Function|null} */
+let _currentPickCleanup = null;
+
+/**
+ * Check if minions should die based on squad stamina pool math.
+ * Squad stamina lives on the CombatantGroup: system.staminaValue (current) / system.staminaMax (pool max).
+ * expectedDead = floor((staminaMax - staminaValue) / individualMax)
+ *
+ * The first death is always automatic:
+ * - If targeted minions exist (e.g. /damage X or AoE), those targets are auto-killed first.
+ * - If no targets (e.g. HUD stamina edit), one alive minion is auto-killed.
+ * Only additional deaths beyond auto-kills enter pick mode.
+ */
+async function _checkMinionDeaths(group) {
+  const minionMembers = Array.from(group.members).filter(m => m.actor?.isMinion);
+  if (!minionMembers.length) return;
+
+  const individualMax = minionMembers[0].actor?.system?.stamina?.max;
+  if (!individualMax || individualMax <= 0) return;
+
+  const poolMax = group.system.staminaMax;
+  const currentPool = group.system.staminaValue;
+  const damageTaken = Math.max(0, poolMax - currentPool);
+  let expectedDead = Math.min(minionMembers.length, Math.floor(damageTaken / individualMax));
+
+  // AoE rule: only targeted minions can die from this damage, no matter how much overkill
+  const targetedInGroup = minionMembers.filter(m =>
+    [...game.user.targets].some(t => t.document.id === m.tokenId)
+  );
+  if (targetedInGroup.length > 0) {
+    expectedDead = Math.min(expectedDead, targetedInGroup.length);
+  }
+
+  const currentlyDead = minionMembers.filter(m => m.isDefeated).length;
+
+  let additionalDeaths = expectedDead - currentlyDead;
+  if (additionalDeaths <= 0) return;
+
+  const aliveMinions = minionMembers.filter(m => !m.isDefeated);
+
+  // If all alive minions should die, just kill them all
+  if (aliveMinions.length <= additionalDeaths) {
+    for (const m of aliveMinions) {
+      try { await m.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+    }
+    return;
+  }
+
+  // Build a priority list of token IDs to auto-kill:
+  // 1. Targeted tokens (AoE / /damage X)
+  // 2. Controlled token (HUD stamina edit — the selected token on canvas)
+  const killed = new Set();
+  const priorityTokenIds = [];
+  for (const t of game.user.targets) {
+    priorityTokenIds.push(t.document.id);
+  }
+  if (canvas.tokens?.controlled?.length) {
+    for (const t of canvas.tokens.controlled) {
+      if (!priorityTokenIds.includes(t.document.id)) {
+        priorityTokenIds.push(t.document.id);
+      }
+    }
+  }
+
+  // Auto-kill priority minions (targeted/controlled) in this group first
+  for (const m of aliveMinions) {
+    if (killed.size >= additionalDeaths) break;
+    if (priorityTokenIds.includes(m.tokenId)) {
+      try { await m.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+      killed.add(m.id);
+    }
+  }
+
+  // If no priority tokens matched, auto-kill the first alive minion
+  if (killed.size === 0) {
+    const firstAlive = aliveMinions[0];
+    if (firstAlive) {
+      try { await firstAlive.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+      killed.add(firstAlive.id);
+    }
+  }
+
+  // Remaining deaths beyond auto-kills enter pick mode
+  const remaining = additionalDeaths - killed.size;
+  if (remaining > 0) {
+    const combat = group.parent;
+    _startMinionPickMode(combat, group, remaining);
+  }
+}
+
+/**
+ * Enter a pick mode where the GM clicks minion tokens on the canvas to mark them dead.
+ * Any alive minion in the group is a valid target.
+ * Press Escape to cancel.
+ */
+function _startMinionPickMode(combat, group, count) {
+  // Cancel any existing pick mode
+  if (_currentPickCleanup) _currentPickCleanup();
+
+  const validTokenIds = new Set();
+  for (const member of group.members) {
+    if (member.isDefeated || !member.actor?.isMinion) continue;
+    if (member.tokenId) validTokenIds.add(member.tokenId);
+  }
+
+  if (!validTokenIds.size || count <= 0) return;
+
+  let remaining = Math.min(count, validTokenIds.size);
+  const l = (key, data) => game.i18n.format(`${MODULE_ID}.${key}`, data);
+  ui.notifications.info(l("MinionPickPrompt", { count: remaining, name: group.name }));
+
+  const hookId = Hooks.on("controlToken", async (token, controlled) => {
+    if (!controlled) return;
+    if (!validTokenIds.has(token.document.id)) return;
+
+    const combatant = combat.combatants.find(c => c.tokenId === token.document.id);
+    if (!combatant || combatant.isDefeated) return;
+
+    try { await combatant.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+    validTokenIds.delete(token.document.id);
+    remaining--;
+    token.release();
+
+    if (remaining > 0 && validTokenIds.size > 0) {
+      ui.notifications.info(l("MinionPickPrompt", { count: remaining, name: group.name }));
+    } else {
+      cleanup();
+    }
+  });
+
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") {
+      cleanup();
+      ui.notifications.info(game.i18n.localize(`${MODULE_ID}.MinionPickCancelled`));
+    }
+  };
+
+  document.addEventListener("keydown", onKeyDown);
+
+  function cleanup() {
+    Hooks.off("controlToken", hookId);
+    document.removeEventListener("keydown", onKeyDown);
+    _currentPickCleanup = null;
+  }
+
+  _currentPickCleanup = cleanup;
+}
 
 /* -------------------------------------------------- */
 /*   Actor Update Hook                                */
@@ -170,10 +361,12 @@ Hooks.on("updateActor", (actor, changes) => {
 
   for (const combatant of combat.combatants) {
     if (combatant.actorId !== actor.id) continue;
+    // Skip grouped minions — their death is handled by squad pool math
+    if (combatant.actor?.isMinion && combatant.group) continue;
     const combatantStamina = combatant.actor?.system?.stamina?.value ?? 0;
     const shouldBeDefeated = combatantStamina <= 0;
     if (combatant.isDefeated !== shouldBeDefeated) {
-      combatant.update({ defeated: shouldBeDefeated });
+      combatant.update({ defeated: shouldBeDefeated }).catch(() => { /* Effect already toggled */ });
     }
   }
 });
@@ -192,12 +385,36 @@ Hooks.on("preCreateActiveEffect", (effect) => {
 
 Hooks.on("createActiveEffect", (effect) => {
   if (!ui.dsCombatDock) return;
-  if (effect.statuses?.has("dead")) ui.dsCombatDock.scheduleRefresh();
+  if (!effect.statuses?.has("dead")) return;
+  ui.dsCombatDock.scheduleRefresh();
+
+  // Sync: if "dead" was added directly (e.g. Token HUD), also mark combatant defeated
+  if (!game.user.isGM) return;
+  const actor = effect.parent;
+  if (!actor || actor.documentName !== "Actor") return;
+  const combat = ui.dsCombatDock.combat;
+  for (const combatant of combat.combatants) {
+    if (combatant.actor === actor && !combatant.isDefeated) {
+      combatant.update({ defeated: true }).catch(() => {});
+    }
+  }
 });
 
 Hooks.on("deleteActiveEffect", (effect) => {
   if (!ui.dsCombatDock) return;
-  if (effect.statuses?.has("dead")) ui.dsCombatDock.scheduleRefresh();
+  if (!effect.statuses?.has("dead")) return;
+  ui.dsCombatDock.scheduleRefresh();
+
+  // Sync: if "dead" was removed directly (e.g. Token HUD), also clear combatant defeated
+  if (!game.user.isGM) return;
+  const actor = effect.parent;
+  if (!actor || actor.documentName !== "Actor") return;
+  const combat = ui.dsCombatDock.combat;
+  for (const combatant of combat.combatants) {
+    if (combatant.actor === actor && combatant.isDefeated) {
+      combatant.update({ defeated: false }).catch(() => {});
+    }
+  }
 });
 
 /* -------------------------------------------------- */
@@ -210,10 +427,16 @@ Hooks.on("createCombatantGroup", (group) => {
   }
 });
 
-Hooks.on("updateCombatantGroup", (group) => {
+Hooks.on("updateCombatantGroup", (group, changes) => {
   if (ui.dsCombatDock?.combat === group.parent) {
     ui.dsCombatDock.scheduleRefresh();
   }
+
+  // Auto minion death: check if squad stamina crossed a death threshold
+  if (!game.user.isGM) return;
+  if (!game.settings.get(MODULE_ID, "autoMinionDeath")) return;
+  if (foundry.utils.getProperty(changes, "system.staminaValue") === undefined) return;
+  _checkMinionDeaths(group);
 });
 
 Hooks.on("deleteCombatantGroup", (group) => {
