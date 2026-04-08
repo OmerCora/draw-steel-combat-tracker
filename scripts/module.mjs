@@ -375,8 +375,9 @@ Hooks.on("updateActor", (actor, changes) => {
 /*   Active Effect Hooks (status effect changes)      */
 /* -------------------------------------------------- */
 
-// Track actors with in-flight dead effect creation to block batch duplicates
+// Track actors with in-flight dead effect creation/deletion to block race conditions
 const _pendingDeadActors = new Set();
+const _pendingDeadDeletions = new Set();
 
 // Prevent duplicate "dead" effects and optionally force overlay
 Hooks.on("preCreateActiveEffect", (effect) => {
@@ -422,18 +423,41 @@ Hooks.on("createActiveEffect", (effect) => {
   }
 });
 
+// Block duplicate dead effect deletions (monks-combat-details races with core)
+Hooks.on("preDeleteActiveEffect", (effect) => {
+  if (!effect.statuses?.has("dead")) return;
+
+  const actor = effect.parent;
+  if (actor?.documentName !== "Actor") return;
+
+  // If a deletion for this actor's dead effect is already in-flight, block this one
+  if (_pendingDeadDeletions.has(actor.id)) return false;
+  _pendingDeadDeletions.add(actor.id);
+});
+
 Hooks.on("deleteActiveEffect", (effect) => {
+  // Clear pending deletion tracker for dead effects
+  if (effect.statuses?.has("dead")) {
+    const actor = effect.parent;
+    if (actor?.documentName === "Actor") {
+      _pendingDeadActors.delete(actor.id);
+      _pendingDeadDeletions.delete(actor.id);
+    }
+  }
+
   if (!ui.dsCombatDock) return;
   if (!effect.statuses?.has("dead")) return;
   ui.dsCombatDock.scheduleRefresh();
 
-  // Sync: if "dead" was removed directly (e.g. Token HUD), also clear combatant defeated
+  // Sync: if "dead" was removed directly (e.g. Token HUD), also clear combatant defeated.
+  // Skip if combatant.defeated is already false — means the encounter tab toggle
+  // already handled it (core sets defeated=false BEFORE deleting the dead effect).
   if (!game.user.isGM) return;
   const actor = effect.parent;
   if (!actor || actor.documentName !== "Actor") return;
   const combat = ui.dsCombatDock.combat;
   for (const combatant of combat.combatants) {
-    if (combatant.actor === actor && combatant.isDefeated) {
+    if (combatant.actor === actor && combatant.defeated) {
       combatant.update({ defeated: false }).catch(() => {});
     }
   }
