@@ -375,24 +375,37 @@ Hooks.on("updateActor", (actor, changes) => {
 /*   Active Effect Hooks (status effect changes)      */
 /* -------------------------------------------------- */
 
-// Force "dead" status to always render as a full-token overlay and prevent duplicates
+// Track actors with in-flight dead effect creation to block batch duplicates
+const _pendingDeadActors = new Set();
+
+// Prevent duplicate "dead" effects and optionally force overlay
 Hooks.on("preCreateActiveEffect", (effect) => {
-  if (!game.settings.get(MODULE_ID, "deadOverlay")) return;
   if (!effect.statuses?.has("dead")) return;
 
-  // If the actor already has a "dead" effect, block this duplicate
   const actor = effect.parent;
-  if (actor?.documentName === "Actor") {
-    const existing = actor.effects.find(e => e.statuses.has("dead"));
-    if (existing) return false;
-  }
+  if (actor?.documentName !== "Actor") return;
 
-  if (!effect.getFlag("core", "overlay")) {
-    effect.updateSource({ "flags.core.overlay": true });
+  // Block if actor already has a dead effect OR one is pending creation
+  const existing = actor.effects.find(e => e.statuses.has("dead"));
+  if (existing || _pendingDeadActors.has(actor.id)) return false;
+
+  _pendingDeadActors.add(actor.id);
+
+  // Force overlay when setting is enabled
+  if (game.settings.get(MODULE_ID, "deadOverlay")) {
+    if (!effect.getFlag("core", "overlay")) {
+      effect.updateSource({ "flags.core.overlay": true });
+    }
   }
 });
 
 Hooks.on("createActiveEffect", (effect) => {
+  // Clear pending tracker for dead effects
+  if (effect.statuses?.has("dead")) {
+    const actor = effect.parent;
+    if (actor?.documentName === "Actor") _pendingDeadActors.delete(actor.id);
+  }
+
   if (!ui.dsCombatDock) return;
   if (!effect.statuses?.has("dead")) return;
   ui.dsCombatDock.scheduleRefresh();
