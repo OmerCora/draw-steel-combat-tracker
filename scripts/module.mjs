@@ -238,8 +238,12 @@ async function _checkMinionDeaths(group) {
 
   // If all alive minions should die, just kill them all
   if (aliveMinions.length <= additionalDeaths) {
+    const defeatedId = CONFIG.specialStatusEffects.DEFEATED;
     for (const m of aliveMinions) {
-      try { await m.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+      try {
+        await m.update({ defeated: true });
+        await m.actor.toggleStatusEffect(defeatedId, { overlay: true, active: true });
+      } catch (e) {}
     }
     return;
   }
@@ -261,10 +265,14 @@ async function _checkMinionDeaths(group) {
   }
 
   // Auto-kill priority minions (targeted/controlled) in this group first
+  const defeatedId = CONFIG.specialStatusEffects.DEFEATED;
   for (const m of aliveMinions) {
     if (killed.size >= additionalDeaths) break;
     if (priorityTokenIds.includes(m.tokenId)) {
-      try { await m.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+      try {
+        await m.update({ defeated: true });
+        await m.actor.toggleStatusEffect(defeatedId, { overlay: true, active: true });
+      } catch (e) {}
       killed.add(m.id);
     }
   }
@@ -273,7 +281,10 @@ async function _checkMinionDeaths(group) {
   if (killed.size === 0) {
     const firstAlive = aliveMinions[0];
     if (firstAlive) {
-      try { await firstAlive.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+      try {
+        await firstAlive.update({ defeated: true });
+        await firstAlive.actor.toggleStatusEffect(defeatedId, { overlay: true, active: true });
+      } catch (e) {}
       killed.add(firstAlive.id);
     }
   }
@@ -314,7 +325,11 @@ function _startMinionPickMode(combat, group, count) {
     const combatant = combat.combatants.find(c => c.tokenId === token.document.id);
     if (!combatant || combatant.isDefeated) return;
 
-    try { await combatant.update({ defeated: true }); } catch (e) { /* Effect already toggled */ }
+    try {
+      await combatant.update({ defeated: true });
+      const defeatedId = CONFIG.specialStatusEffects.DEFEATED;
+      await combatant.actor.toggleStatusEffect(defeatedId, { overlay: true, active: true });
+    } catch (e) {}
     validTokenIds.delete(token.document.id);
     remaining--;
     token.release();
@@ -366,7 +381,9 @@ Hooks.on("updateActor", (actor, changes) => {
     const combatantStamina = combatant.actor?.system?.stamina?.value ?? 0;
     const shouldBeDefeated = combatantStamina <= 0;
     if (combatant.isDefeated !== shouldBeDefeated) {
-      combatant.update({ defeated: shouldBeDefeated }).catch(() => { /* Effect already toggled */ });
+      combatant.update({ defeated: shouldBeDefeated }).catch(() => {});
+      const defeatedId = CONFIG.specialStatusEffects.DEFEATED;
+      combatant.actor.toggleStatusEffect(defeatedId, { overlay: true, active: shouldBeDefeated }).catch(() => {});
     }
   }
 });
