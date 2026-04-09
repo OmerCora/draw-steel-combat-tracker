@@ -45,8 +45,13 @@
       "AutoMinionDeath": {
         "Name": "Automated Minion Death",
         "Hint": "Automatically mark minions as dead when the squad's stamina pool drops below death thresholds. When excess damage kills additional minions, prompts the GM to pick which minions die by clicking their tokens."
+      },
+      "PillColor": {
+        "Name": "Group Background Colors",
+        "Hint": "Show custom background colors on group pills in the combat dock. Set colors via the Color Tokens dialog's Dock Background button."
       }
     },
+    "PillBackground": "Dock Background",
     "Tooltip": {
       "Stamina": "Stamina",
       "TempStamina": "Temp",

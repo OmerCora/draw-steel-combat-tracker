@@ -437,6 +437,12 @@ export class CombatDock {
         else staminaClass = "status-healthy";
       }
 
+      // Detect group pill background color from module flag (requires setting enabled).
+      let pillColor = null;
+      if (game.settings.get(MODULE_ID, "pillColor")) {
+        pillColor = group.getFlag(MODULE_ID, "pillColor") ?? null;
+      }
+
       // Simple tooltip (name + action hint)
       const actionHint = canAct
         ? game.i18n.localize(`${MODULE_ID}.Act`)
@@ -467,6 +473,7 @@ export class CombatDock {
         captainData,
         nonMinionMembers,
         minionGroups,
+        pillColor,
       });
     }
 
@@ -601,7 +608,10 @@ export class CombatDock {
     // Group member click (activate individual), right-click, tooltip, and hover highlight
     for (const el of this.element.querySelectorAll(".ds-mini-portrait")) {
       el.addEventListener("click", (event) => this._onMiniPortraitClick(event, el));
-      el.addEventListener("contextmenu", (event) => this._onPortraitContext(event, el));
+      el.addEventListener("contextmenu", (event) => {
+        event.stopPropagation();
+        this._onPortraitContext(event, el);
+      });
       el.addEventListener("mouseenter", (event) => {
         event.stopPropagation();
         this._onMiniPortraitHover(event, el, true);
@@ -759,12 +769,8 @@ export class CombatDock {
       if (combatant?.actor?.testUserPermission(game.user, "OBSERVER")) {
         combatant.actor.sheet?.render(true);
       }
-    } else {
-      const group = this.combat.groups.get(id);
-      if (group?.isOwner) {
-        group.sheet?.render({ force: true });
-      }
     }
+    // Groups: do not open group sheet from the combat dock
   }
 
   /* -------------------------------------------------- */

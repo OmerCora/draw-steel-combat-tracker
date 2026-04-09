@@ -7,7 +7,7 @@
     {{#each partyEntries}}
     {{#if isGroup}}
     <div class="ds-group-wrapper">
-      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
+      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group" {{#if pillColor}}style="background-color: {{pillColor}}26;"{{/if}}>
         {{#if captainData}}
         <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}} {{#if captainData.defeated}}defeated{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">
@@ -101,7 +101,7 @@
     {{#each enemyEntries}}
     {{#if isGroup}}
     <div class="ds-group-wrapper">
-      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group">
+      <div class="ds-group-container {{cssClass}}" data-id="{{id}}" data-type="group" {{#if pillColor}}style="background-color: {{pillColor}}26;"{{/if}}>
         {{#if captainData}}
         <div class="ds-mini-portrait captain {{#if captainData.active}}active{{/if}} {{#if captainData.canAct}}can-act{{/if}} {{#if captainData.defeated}}defeated{{/if}}" data-member-id="{{captainData.id}}" data-type="combatant">
           <div class="ds-mini-portrait-img">

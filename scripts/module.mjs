@@ -14,7 +14,7 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "showTooltip", {
     name: `${MODULE_ID}.Settings.ShowTooltip.Name`,
     hint: `${MODULE_ID}.Settings.ShowTooltip.Hint`,
-    scope: "client",
+    scope: "world",
     config: true,
     type: Boolean,
     default: true,
@@ -23,7 +23,7 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "heroImageSource", {
     name: `${MODULE_ID}.Settings.HeroImageSource.Name`,
     hint: `${MODULE_ID}.Settings.HeroImageSource.Hint`,
-    scope: "client",
+    scope: "world",
     config: true,
     type: String,
     choices: {
@@ -37,7 +37,7 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "monsterImageSource", {
     name: `${MODULE_ID}.Settings.MonsterImageSource.Name`,
     hint: `${MODULE_ID}.Settings.MonsterImageSource.Hint`,
-    scope: "client",
+    scope: "world",
     config: true,
     type: String,
     choices: {
@@ -74,6 +74,16 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false,
   });
+
+  game.settings.register(MODULE_ID, "pillColor", {
+    name: `${MODULE_ID}.Settings.PillColor.Name`,
+    hint: `${MODULE_ID}.Settings.PillColor.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => ui.dsCombatDock?.scheduleRefresh(),
+  });
 });
 
 /* -------------------------------------------------- */
@@ -84,6 +94,87 @@ Hooks.on("ready", () => {
   const combat = game.combat;
   if (combat?.started) {
     new CombatDock(combat).render();
+  }
+
+  // Replace colorTokensDialog to add a "Dock Background" button.
+  // Stores pill color as a module flag on the CombatantGroup document.
+  const CombatantGroup = CONFIG.CombatantGroup?.documentClass;
+  if (CombatantGroup?.prototype?.colorTokensDialog) {
+    CombatantGroup.prototype.colorTokensDialog = async function () {
+      const content = document.createElement("div");
+      const colorInput = foundry.applications.fields.createFormGroup({
+        label: "DRAW_STEEL.CombatantGroup.ColorTokens.Input",
+        input: foundry.applications.elements.HTMLColorPickerElement.create({ name: "color" }),
+        localize: true,
+      });
+      const swatches = document.createElement("div");
+      swatches.className = "form-group color-swatches";
+      for (const c of ["#FFFFFF", "#000000", "#FF0000", "#00FF00", "#0000FF", "#00FFFF", "#FF00FF", "#FFFF00"]) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "color-swatch";
+        Object.assign(btn.dataset, { action: "swatchColor", color: c });
+        btn.style.cssText = `--swatch-color: ${c}`;
+        swatches.append(btn);
+      }
+      content.append(colorInput, swatches);
+
+      const buttons = [
+        {
+          label: "TOKEN.FIELDS.texture.tint.label",
+          action: "texture.tint",
+          callback: (ev, button) => ({
+            fieldPath: button.dataset.action,
+            color: button.form.color.value,
+          }),
+        },
+        {
+          label: "TOKEN.FIELDS.ring.colors.ring.label",
+          action: "ring.colors.ring",
+          callback: (ev, button) => ({
+            fieldPath: button.dataset.action,
+            color: button.form.color.value,
+          }),
+        },
+      ];
+
+      if (game.settings.get(MODULE_ID, "pillColor")) {
+        buttons.push({
+          label: `${MODULE_ID}.PillBackground`,
+          action: "pillColor",
+          callback: (ev, button) => ({
+            pillColor: true,
+            color: button.form.color.value,
+          }),
+        });
+      }
+
+      const fd = await foundry.applications.api.Dialog.wait({
+        content,
+        actions: {
+          swatchColor(ev, target) { target.form.color.value = target.dataset.color; },
+        },
+        classes: ["draw-steel", "color-tokens"],
+        window: {
+          title: "DRAW_STEEL.CombatantGroup.ColorTokens.Title",
+          icon: "fa-solid fa-palette",
+        },
+        position: { width: 400, height: "auto" },
+        buttons,
+      });
+
+      if (!fd) return;
+
+      // Third button: store color as a module flag
+      if (fd.pillColor) {
+        await this.setFlag(MODULE_ID, "pillColor", fd.color.toLowerCase());
+        ui.dsCombatDock?.scheduleRefresh();
+        return;
+      }
+
+      // First two buttons: update tokens as usual
+      return this.updateTokens(fd.fieldPath, fd.color);
+    };
   }
 });
 
