@@ -84,6 +84,26 @@ Hooks.once("init", () => {
     default: false,
     onChange: () => ui.dsCombatDock?.scheduleRefresh(),
   });
+
+  game.settings.register(MODULE_ID, "resizableWidth", {
+    name: `${MODULE_ID}.Settings.ResizableWidth.Name`,
+    hint: `${MODULE_ID}.Settings.ResizableWidth.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => ui.dsCombatDock?.scheduleRefresh(),
+  });
+
+  game.settings.register(MODULE_ID, "alignLeft", {
+    name: `${MODULE_ID}.Settings.AlignLeft.Name`,
+    hint: `${MODULE_ID}.Settings.AlignLeft.Hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => ui.dsCombatDock?.scheduleRefresh(),
+  });
 });
 
 /* -------------------------------------------------- */

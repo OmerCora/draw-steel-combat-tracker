@@ -49,6 +49,14 @@
       "PillColor": {
         "Name": "Group Background Colors",
         "Hint": "Show custom background colors on group pills in the combat dock. Set colors via the Color Tokens dialog's Dock Background button."
+      },
+      "ResizableWidth": {
+        "Name": "Resizable Dock Width",
+        "Hint": "Allow the combat dock to be resized horizontally by dragging its left or right edge. The dock narrows from the sides while keeping its centered position."
+      },
+      "AlignLeft": {
+        "Name": "Align Dock Content Left",
+        "Hint": "Stick the party, center, and enemy sections to the left edge of the dock instead of centering them. Useful when the left side of the screen has more available space."
       }
     },
     "PillBackground": "Dock Background",

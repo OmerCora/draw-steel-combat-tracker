@@ -44,7 +44,34 @@ export class CombatDock {
 
     this.element.innerHTML = html;
     if (this._collapsed) this.element.classList.add("collapsed");
+
+    // Align-left mode
+    const alignLeft = game.settings.get(MODULE_ID, "alignLeft");
+    this.element.classList.toggle("align-left", alignLeft);
+
+    // Resizable width mode
+    const resizable = game.settings.get(MODULE_ID, "resizableWidth");
+    this.element.classList.toggle("resizable", resizable);
+    if (resizable) {
+      if (this._dockWidth) this.element.style.setProperty("--dock-width", this._dockWidth + "px");
+      const inner = this.element.querySelector(".ds-combat-dock");
+      if (inner) {
+        for (const side of ["left", "right"]) {
+          const handle = document.createElement("div");
+          handle.classList.add("ds-resize-handle", `ds-resize-handle-${side}`);
+          inner.appendChild(handle);
+        }
+      }
+    } else {
+      this.element.style.removeProperty("--dock-width");
+      this._dockWidth = null;
+    }
+
     this._activateListeners();
+
+    // Scroll party side to right end so the active (rightmost) portraits are visible
+    const partyEl = this.element.querySelector(".ds-dock-party");
+    if (partyEl) partyEl.scrollLeft = partyEl.scrollWidth;
   }
 
   /* -------------------------------------------------- */
@@ -645,6 +672,48 @@ export class CombatDock {
         this.element.classList.toggle("collapsed", this._collapsed);
       });
     }
+
+    // Resize handles for horizontal width dragging
+    for (const handle of this.element.querySelectorAll(".ds-resize-handle")) {
+      handle.addEventListener("mousedown", (event) => this._onResizeStart(event, handle));
+    }
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Begin horizontal resize drag from a resize handle.
+   * @param {MouseEvent} event
+   * @param {HTMLElement} handle
+   */
+  _onResizeStart(event, handle) {
+    event.preventDefault();
+    const isLeft = handle.classList.contains("ds-resize-handle-left");
+    const startX = event.clientX;
+    const startWidth = this.element.offsetWidth;
+    // Minimum accommodates ~3 regular portraits (86px) per side + gaps + center panel
+    const minWidth = 800;
+    handle.classList.add("active");
+
+    const onMove = (e) => {
+      const delta = e.clientX - startX;
+      // Since the dock is centered, double the delta so the edge tracks the cursor
+      const newWidth = Math.max(
+        isLeft ? startWidth - (delta * 2) : startWidth + (delta * 2),
+        minWidth
+      );
+      this._dockWidth = newWidth;
+      this.element.style.setProperty("--dock-width", newWidth + "px");
+    };
+
+    const onUp = () => {
+      handle.classList.remove("active");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   }
 
   /* -------------------------------------------------- */
