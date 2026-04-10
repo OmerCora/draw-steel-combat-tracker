@@ -145,7 +145,7 @@ export class CombatDock {
       }
     }
 
-    // Compute CSS classes per entry
+    // Compute CSS classes per entry (and nested retainerData)
     for (const entry of entries) {
       const classes = [];
       if (entry.defeated) classes.push("defeated");
@@ -154,6 +154,17 @@ export class CombatDock {
       if (entry.canAct && !entry.defeated) classes.push("can-act");
       if (entry.hidden) classes.push("hidden-combatant");
       entry.cssClass = classes.join(" ");
+
+      // Also compute retainer CSS classes if present
+      if (entry.retainerData) {
+        const rd = entry.retainerData;
+        const rClasses = [];
+        if (rd.defeated) rClasses.push("defeated");
+        if (rd.active && hasTurn) rClasses.push("active");
+        else if (!rd.canAct && !rd.defeated) rClasses.push("done");
+        if (rd.canAct && !rd.defeated) rClasses.push("can-act");
+        rd.cssClass = rClasses.join(" ");
+      }
     }
 
     // End turn permissions
@@ -196,6 +207,9 @@ export class CombatDock {
             }
           }
         }
+      }
+      if (entry.retainerData?.tooltipData) {
+        this._tooltipData.set(entry.retainerData.id, { name: entry.retainerData.name, actionHint: entry.retainerData.actionHint, tooltipData: entry.retainerData.tooltipData, isOwner: entry.isOwner });
       }
     }
 
@@ -571,18 +585,53 @@ export class CombatDock {
         tooltipData: this._getTooltipData(combatant.actor),
         cssClass: "",
         isOwner: combatant.isOwner,
+        retainerData: null,
+        _actorId: combatant.actor?.id ?? null,
+        _mentorId: combatant.actor?.type === "retainer"
+          ? combatant.actor.system?.retainer?.mentor?.id ?? combatant.actor.system?.retainer?.mentor ?? null
+          : null,
       });
     }
 
-    // Sort: active first, then can-act, then done, then defeated, then by name
-    entries.sort((a, b) => {
-      if (a.active !== b.active) return a.active ? -1 : 1;
+    // Attach retainers to their mentor's entry
+    const retainerEntries = entries.filter(e => e._mentorId);
+    for (const retainer of retainerEntries) {
+      const mentor = entries.find(e => e._actorId === retainer._mentorId && !e._mentorId);
+      if (mentor) {
+        mentor.retainerData = {
+          id: retainer.id,
+          name: retainer.name,
+          img: retainer.img,
+          defeated: retainer.defeated,
+          active: retainer.active,
+          canAct: retainer.canAct,
+          staminaText: retainer.staminaText,
+          staminaClass: retainer.staminaClass,
+          cssClass: retainer.cssClass,
+          actionHint: retainer.actionHint,
+          tooltipData: retainer.tooltipData,
+        };
+        // If retainer is active, boost mentor sort priority (but not visual state)
+        if (retainer.active) mentor._pairActive = true;
+      }
+    }
+    // Remove retainers that were attached to a mentor from standalone entries
+    const attachedRetainerIds = new Set(
+      entries.filter(e => e.retainerData).map(e => e.retainerData.id)
+    );
+    const filteredEntries = entries.filter(e => !attachedRetainerIds.has(e.id));
+
+    // Sort: active (or pair-active) first, then can-act, then done, then defeated, then by name
+    filteredEntries.sort((a, b) => {
+      const aActive = a.active || a._pairActive;
+      const bActive = b.active || b._pairActive;
+      if (aActive !== bActive) return aActive ? -1 : 1;
       if (a.defeated !== b.defeated) return a.defeated ? 1 : -1;
       if (a.canAct !== b.canAct) return a.canAct ? -1 : 1;
       return (a.name ?? "").localeCompare(b.name ?? "", game.i18n.lang);
     });
 
-    return entries;
+    return filteredEntries;
   }
 
   /* -------------------------------------------------- */
@@ -595,11 +644,48 @@ export class CombatDock {
   _activateListeners() {
     if (!this.element) return;
 
-    // Portrait interactions (individual combatants)
+    // Portrait interactions (individual combatants — skip those inside a mentor pair)
     for (const el of this.element.querySelectorAll(".ds-portrait")) {
+      if (el.closest(".ds-mentor-pair")) continue;
       el.addEventListener("click", (event) => this._onPortraitClick(event, el));
       el.addEventListener("contextmenu", (event) => this._onPortraitContext(event, el));
       el.addEventListener("mouseenter", (event) => { this._onPortraitHover(event, el, true); this._showTooltip(el); });
+      el.addEventListener("mouseleave", (event) => { this._onPortraitHover(event, el, false); this._hideTooltip(); });
+    }
+
+    // Retainer portrait interactions (click takes retainer's own turn, right-click opens sheet)
+    for (const el of this.element.querySelectorAll(".ds-retainer-portrait")) {
+      el.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const memberId = el.dataset.memberId;
+        this._onPortraitClick(event, { dataset: { id: memberId } });
+      });
+      el.addEventListener("contextmenu", (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        const memberId = el.dataset.memberId;
+        const combatant = this.combat.combatants.get(memberId);
+        if (combatant?.actor?.testUserPermission(game.user, "OBSERVER")) {
+          combatant.actor.sheet?.render(true);
+        }
+      });
+      el.addEventListener("mouseenter", (event) => { event.stopPropagation(); this._showTooltip(el); });
+      el.addEventListener("mouseleave", (event) => { event.stopPropagation(); this._hideTooltip(); });
+    }
+
+    // Mentor pair interactions (click the pair wrapper to act/restore mentor)
+    for (const el of this.element.querySelectorAll(".ds-mentor-pair")) {
+      const mentorPortrait = el.querySelector(".ds-portrait");
+      if (!mentorPortrait) continue;
+      el.addEventListener("click", (event) => {
+        if (event.target.closest(".ds-retainer-portrait")) return;
+        this._onPortraitClick(event, el);
+      });
+      el.addEventListener("contextmenu", (event) => {
+        if (event.target.closest(".ds-retainer-portrait")) return;
+        this._onPortraitContext(event, el);
+      });
+      el.addEventListener("mouseenter", (event) => { this._onPortraitHover(event, el, true); this._showTooltip(mentorPortrait); });
       el.addEventListener("mouseleave", (event) => { this._onPortraitHover(event, el, false); this._hideTooltip(); });
     }
 
@@ -737,7 +823,14 @@ export class CombatDock {
     const oldValue = combatant.initiative;
 
     if (oldValue) {
-      if (hasTurn && !game.user.isGM) return;
+      if (hasTurn && !game.user.isGM) {
+        // Allow players to activate their own retainer even during a turn
+        const mentorRef = combatant.actor?.type === "retainer"
+          ? (combatant.actor.system?.retainer?.mentor?.id ?? combatant.actor.system?.retainer?.mentor)
+          : null;
+        const isOwnRetainer = mentorRef && game.user.character?.id === mentorRef;
+        if (!isOwnRetainer) return;
+      }
       // Activating: decrement initiative and set as current turn
       await combatant.update({ initiative: oldValue - 1 });
       const newTurn = this.combat.turns.findIndex(c => c === combatant);

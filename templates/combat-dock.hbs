@@ -41,6 +41,26 @@
       {{#if staminaText}}<span class="ds-group-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{else}}
+    {{#if retainerData}}
+    <div class="ds-mentor-pair {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+      <div class="ds-retainer-portrait {{retainerData.cssClass}}" data-member-id="{{retainerData.id}}" data-type="combatant">
+        <div class="ds-retainer-portrait-img">
+          <img src="{{retainerData.img}}" alt="{{retainerData.name}}" loading="lazy">
+          {{#if retainerData.defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
+        </div>
+        <span class="ds-portrait-name">{{retainerData.name}}</span>
+        {{#if retainerData.staminaText}}<span class="ds-portrait-stamina {{retainerData.staminaClass}}">{{retainerData.staminaText}}</span>{{/if}}
+      </div>
+      <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+        <div class="ds-portrait-img">
+          <img src="{{img}}" alt="{{name}}" loading="lazy">
+          {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
+        </div>
+        <span class="ds-portrait-name">{{name}}</span>
+        {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
+      </div>
+    </div>
+    {{else}}
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
       <div class="ds-portrait-img">
         <img src="{{img}}" alt="{{name}}" loading="lazy">
@@ -49,6 +69,7 @@
       <span class="ds-portrait-name">{{name}}</span>
       {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
+    {{/if}}
     {{/if}}
     {{/each}}
   </div>
@@ -135,6 +156,26 @@
       {{#if staminaText}}<span class="ds-group-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
     {{else}}
+    {{#if retainerData}}
+    <div class="ds-mentor-pair {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+      <div class="ds-retainer-portrait {{retainerData.cssClass}}" data-member-id="{{retainerData.id}}" data-type="combatant">
+        <div class="ds-retainer-portrait-img">
+          <img src="{{retainerData.img}}" alt="{{retainerData.name}}" loading="lazy">
+          {{#if retainerData.defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
+        </div>
+        <span class="ds-portrait-name">{{retainerData.name}}</span>
+        {{#if retainerData.staminaText}}<span class="ds-portrait-stamina {{retainerData.staminaClass}}">{{retainerData.staminaText}}</span>{{/if}}
+      </div>
+      <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
+        <div class="ds-portrait-img">
+          <img src="{{img}}" alt="{{name}}" loading="lazy">
+          {{#if defeated}}<i class="fas fa-skull ds-defeated-skull"></i>{{/if}}
+        </div>
+        <span class="ds-portrait-name">{{name}}</span>
+        {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
+      </div>
+    </div>
+    {{else}}
     <div class="ds-portrait {{cssClass}}" data-id="{{id}}" data-type="{{type}}">
       <div class="ds-portrait-img">
         <img src="{{img}}" alt="{{name}}" loading="lazy">
@@ -143,6 +184,7 @@
       <span class="ds-portrait-name">{{name}}</span>
       {{#if staminaText}}<span class="ds-portrait-stamina {{staminaClass}}">{{staminaText}}</span>{{/if}}
     </div>
+    {{/if}}
     {{/if}}
     {{/each}}
   </div>
