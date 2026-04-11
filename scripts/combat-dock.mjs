@@ -153,6 +153,10 @@ export class CombatDock {
       else if (!entry.canAct && !entry.defeated) classes.push("done");
       if (entry.canAct && !entry.defeated) classes.push("can-act");
       if (entry.hidden) classes.push("hidden-combatant");
+      if (entry.totalTurns > 1) {
+        classes.push("multi-turn");
+        if (entry.initiative >= entry.totalTurns) classes.push("outer-ready");
+      }
       entry.cssClass = classes.join(" ");
 
       // Also compute retainer CSS classes if present
@@ -504,6 +508,7 @@ export class CombatDock {
         defeated: group.defeated,
         hidden: group.hidden,
         initiative: group.initiative,
+        totalTurns: 1,
         minionLabel: null,
         staminaText,
         staminaClass,
@@ -578,6 +583,7 @@ export class CombatDock {
         defeated: combatant.isDefeated,
         hidden: combatant.hidden,
         initiative: combatant.initiative,
+        totalTurns: combatant.actor?.system?.combat?.turns ?? 1,
         minionLabel: null,
         staminaText,
         staminaClass,

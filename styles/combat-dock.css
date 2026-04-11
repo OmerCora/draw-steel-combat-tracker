@@ -343,7 +343,7 @@
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.3s ease;
   flex-shrink: 0;
-  gap: 2px;
+  gap: 0;
 }
 
 .ds-portrait:hover {
@@ -373,6 +373,7 @@
 }
 
 .ds-portrait-name {
+  margin-top: 4px;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
@@ -431,6 +432,38 @@
 .ds-portrait.done .ds-portrait-img {
   filter: grayscale(0.8) brightness(0.5);
   border-color: rgba(128, 128, 128, 0.2);
+}
+
+/* Multi-turn — double ring for solo creatures with multiple turns */
+.ds-portrait.multi-turn .ds-portrait-img {
+  outline: 2px solid rgba(128, 128, 128, 0.3);
+  outline-offset: 1px;
+  border-radius: 50%;
+}
+
+/* Both turns available — outer green */
+.ds-portrait.multi-turn.can-act.outer-ready .ds-portrait-img {
+  outline-color: rgba(46, 204, 113, 0.5);
+}
+
+.ds-dock-side.highlighted .ds-portrait.multi-turn.can-act.outer-ready .ds-portrait-img {
+  outline-color: rgba(46, 204, 113, 0.9);
+}
+
+/* Taking first turn — outer orange, inner stays green */
+.ds-portrait.multi-turn.active.can-act .ds-portrait-img {
+  outline-color: #f39c12;
+  border-color: rgba(46, 204, 113, 0.9);
+}
+
+/* Taking second/last turn — outer stays gray, inner orange */
+.ds-portrait.multi-turn.active:not(.can-act) .ds-portrait-img {
+  outline-color: rgba(128, 128, 128, 0.3);
+}
+
+/* Done — outer ring dimmed */
+.ds-portrait.multi-turn.done .ds-portrait-img {
+  outline-color: rgba(128, 128, 128, 0.15);
 }
 
 .ds-portrait.done .ds-portrait-name,
@@ -729,6 +762,34 @@
 .ds-group-container.defeated {
   opacity: 0.3;
   border-color: rgba(180, 30, 30, 0.4);
+}
+
+/* Multi-turn group — double ring for solo groups with multiple turns */
+.ds-group-container.multi-turn {
+  outline: 2px solid rgba(128, 128, 128, 0.3);
+  outline-offset: 1px;
+  border-radius: 28px;
+}
+
+.ds-group-container.multi-turn.can-act.outer-ready {
+  outline-color: rgba(46, 204, 113, 0.5);
+}
+
+.ds-dock-side.highlighted .ds-group-container.multi-turn.can-act.outer-ready {
+  outline-color: rgba(46, 204, 113, 0.9);
+}
+
+.ds-group-container.multi-turn.active.can-act {
+  outline-color: #f39c12;
+  border-color: rgba(46, 204, 113, 0.9);
+}
+
+.ds-group-container.multi-turn.active:not(.can-act) {
+  outline-color: rgba(128, 128, 128, 0.3);
+}
+
+.ds-group-container.multi-turn.done {
+  outline-color: rgba(128, 128, 128, 0.15);
 }
 
 /* Group name/stamina below the pill */
