@@ -202,7 +202,9 @@ Hooks.on("ready", () => {
 /*   Combat Lifecycle Hooks                           */
 /* -------------------------------------------------- */
 
-Hooks.on("combatStart", (combat) => {
+Hooks.on("combatStart", (combat, updateData) => {
+  // Prevent the auto-assigned initial turn so no token gets the turn indicator ring
+  if (updateData) updateData.turn = null;
   if (!ui.dsCombatDock || ui.dsCombatDock.combat !== combat) {
     new CombatDock(combat).render();
   }

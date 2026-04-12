@@ -115,7 +115,8 @@ export class CombatDock {
     const enemyEntries = entries.filter(e => !e.isParty);
 
     const currentCombatant = combat.combatant;
-    const hasTurn = currentCombatant != null && Number.isNumeric(combat.turn);
+    const rawHasTurn = currentCombatant != null && Number.isNumeric(combat.turn);
+    const hasTurn = rawHasTurn && !this._isInitialPhase();
 
     // Determine turn label and track acting side
     let turnLabel = "";
@@ -825,7 +826,7 @@ export class CombatDock {
     if (!combatant.isOwner && !game.user.isGM) return;
 
     // Block activation while another turn is active (non-GM)
-    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn) && !this._isInitialPhase();
     const oldValue = combatant.initiative;
 
     if (oldValue) {
@@ -865,7 +866,7 @@ export class CombatDock {
     if (!combatant) return;
     if (!combatant.isOwner && !game.user.isGM) return;
 
-    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn) && !this._isInitialPhase();
     const oldValue = combatant.initiative;
 
     if (oldValue) {
@@ -900,7 +901,7 @@ export class CombatDock {
     if (!group) return;
     if (!group.isOwner && !game.user.isGM) return;
 
-    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn);
+    const hasTurn = this.combat.combatant != null && Number.isNumeric(this.combat.turn) && !this._isInitialPhase();
     const oldValue = group.initiative;
 
     if (oldValue) {
@@ -1095,6 +1096,19 @@ export class CombatDock {
     if (this._tooltipEl) {
       this._tooltipEl.style.display = "none";
     }
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Detect the initial phase of combat where the system auto-assigns turn 0
+   * but no one has actually acted yet (all combatants have full initiative).
+   * @returns {boolean}
+   */
+  _isInitialPhase() {
+    return this.combat.combatants.contents.every(c =>
+      c.isDefeated || c.initiative >= (c.actor?.system?.combat?.turns ?? 1)
+    );
   }
 
   /* -------------------------------------------------- */
