@@ -483,10 +483,9 @@
 /* Skull overlay icon for defeated portraits */
 .ds-portrait.defeated .ds-defeated-skull {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 28px;
   color: rgba(255, 255, 255, 0.8);
   pointer-events: none;
@@ -583,10 +582,9 @@
 
 .ds-retainer-portrait.defeated .ds-retainer-portrait-img .ds-defeated-skull {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 16px;
   color: rgba(255, 255, 255, 0.8);
   pointer-events: none;
@@ -892,10 +890,9 @@
 /* Skull overlay for defeated members — inside the img wrapper */
 .ds-mini-portrait.captain.defeated .ds-defeated-skull {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 20px;
   color: rgba(255, 255, 255, 0.8);
   pointer-events: none;
@@ -905,10 +902,9 @@
 
 .ds-mini-portrait.minion.defeated .ds-defeated-skull {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 10px;
   color: rgba(255, 255, 255, 0.8);
   pointer-events: none;

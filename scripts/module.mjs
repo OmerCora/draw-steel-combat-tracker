@@ -116,6 +116,16 @@ Hooks.on("ready", () => {
     new CombatDock(combat).render();
   }
 
+  // Override system's checkDefeatedMinions when our autoMinionDeath handles it
+  const SquadModel = ds.data?.CombatantGroup?.SquadModel;
+  if (SquadModel) {
+    const _origCheckDefeatedMinions = SquadModel.prototype.checkDefeatedMinions;
+    SquadModel.prototype.checkDefeatedMinions = function (...args) {
+      if (game.settings.get(MODULE_ID, "autoMinionDeath")) return;
+      return _origCheckDefeatedMinions.call(this, ...args);
+    };
+  }
+
   // Replace colorTokensDialog to add a "Dock Background" button.
   // Stores pill color as a module flag on the CombatantGroup document.
   const CombatantGroup = CONFIG.CombatantGroup?.documentClass;
