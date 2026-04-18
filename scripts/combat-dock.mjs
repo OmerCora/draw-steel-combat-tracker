@@ -701,7 +701,14 @@ export class CombatDock {
       el.addEventListener("click", (event) => this._onGroupPillClick(event, el));
       el.addEventListener("contextmenu", (event) => this._onPortraitContext(event, el));
       el.addEventListener("mouseenter", (event) => this._onPortraitHover(event, el, true));
-      el.addEventListener("mouseleave", (event) => this._onPortraitHover(event, el, false));
+      el.addEventListener("mouseleave", (event) => {
+        this._onPortraitHover(event, el, false);
+        // If moving to the labels (still inside wrapper but outside pill), re-hover the group
+        const wrapper = el.closest(".ds-group-wrapper");
+        if (wrapper && event.relatedTarget && wrapper.contains(event.relatedTarget) && !el.contains(event.relatedTarget)) {
+          this._onPortraitHover(event, el, true);
+        }
+      });
     }
 
     // Group wrapper interactions (labels below the pill act like the pill itself)
@@ -740,6 +747,20 @@ export class CombatDock {
       el.addEventListener("mouseleave", (event) => {
         this._onMiniPortraitHover(event, el, false);
         this._hideTooltip();
+        // If moving back to the pill/wrapper area (not to another mini-portrait), re-hover the whole group
+        const groupEl = el.closest(".ds-group-container");
+        const wrapper = el.closest(".ds-group-wrapper");
+        const target = event.relatedTarget;
+        if (groupEl && target && (wrapper?.contains(target) || groupEl.contains(target)) && !target.closest?.(".ds-mini-portrait")) {
+          const groupId = groupEl.dataset.id;
+          const group = this.combat?.groups?.get(groupId);
+          if (group) {
+            for (const member of group.members) {
+              const token = canvas?.tokens?.get(member.tokenId);
+              if (token?.visible) token._onHoverIn(event, { hoverOutOthers: false });
+            }
+          }
+        }
       });
     }
 
