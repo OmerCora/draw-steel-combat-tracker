@@ -1,6 +1,7 @@
 # Draw Steel - Combat Tracker
 
 [![Downloads](https://img.shields.io/github/downloads/OmerCora/draw-steel-combat-tracker/total?label=Downloads&color=4aa94a)](https://github.com/OmerCora/draw-steel-combat-tracker/releases)
+[![Latest Version Downloads](https://img.shields.io/github/downloads/OmerCora/draw-steel-combat-tracker/latest/total?label=Latest%20Version&color=4aa94a)](https://github.com/OmerCora/draw-steel-combat-tracker/releases/latest)
 [![Foundry Installs](https://img.shields.io/endpoint?url=https://foundryshields.com/installs?packageName=draw-steel-combat-tracker)](https://foundryvtt.com/packages/draw-steel-combat-tracker)
 
 A Foundry VTT module for the [Draw Steel](https://mcdmproductions.com) system that provides a visual combat tracker overlay with side-based portrait layout and full zipper initiative support.
