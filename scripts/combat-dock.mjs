@@ -16,6 +16,7 @@ export class CombatDock {
     this._lastActedSide = null;
     this._refreshTimer = null;
     this._collapsed = false;
+    this._onDocumentPointerDown = (event) => this._handleDocumentPointerDown(event);
   }
 
   /* -------------------------------------------------- */
@@ -91,6 +92,7 @@ export class CombatDock {
    */
   close() {
     if (this._refreshTimer) clearTimeout(this._refreshTimer);
+    document.removeEventListener("pointerdown", this._onDocumentPointerDown, true);
     this.element?.remove();
     this.element = null;
     this._tooltipEl?.remove();
@@ -168,6 +170,7 @@ export class CombatDock {
         if (rd.active && hasTurn) rClasses.push("active");
         else if (!rd.canAct && !rd.defeated) rClasses.push("done");
         if (rd.canAct && !rd.defeated) rClasses.push("can-act");
+        if (rd.hidden) rClasses.push("hidden-combatant");
         rd.cssClass = rClasses.join(" ");
       }
     }
@@ -402,6 +405,7 @@ export class CombatDock {
           canAct: member.initiative > 0,
           active: member === currentTurn,
           defeated: member.isDefeated,
+          hidden: member.hidden,
           tooltipData: this._getTooltipData(member.actor),
         };
 
@@ -508,6 +512,7 @@ export class CombatDock {
         done: !canAct && !group.defeated,
         defeated: group.defeated,
         hidden: group.hidden,
+        visibilityTooltip: this._getVisibilityTooltip(group.hidden),
         initiative: group.initiative,
         totalTurns: 1,
         minionLabel: null,
@@ -583,6 +588,7 @@ export class CombatDock {
         done: !canAct && !combatant.isDefeated,
         defeated: combatant.isDefeated,
         hidden: combatant.hidden,
+        visibilityTooltip: this._getVisibilityTooltip(combatant.hidden),
         initiative: combatant.initiative,
         totalTurns: combatant.actor?.system?.combat?.turns ?? 1,
         minionLabel: null,
@@ -610,11 +616,13 @@ export class CombatDock {
           name: retainer.name,
           img: retainer.img,
           defeated: retainer.defeated,
+          hidden: retainer.hidden,
           active: retainer.active,
           canAct: retainer.canAct,
           staminaText: retainer.staminaText,
           staminaClass: retainer.staminaClass,
           cssClass: retainer.cssClass,
+          visibilityTooltip: retainer.visibilityTooltip,
           actionHint: retainer.actionHint,
           tooltipData: retainer.tooltipData,
         };
@@ -776,8 +784,11 @@ export class CombatDock {
 
     // Action buttons
     for (const btn of this.element.querySelectorAll("[data-action]")) {
-      btn.addEventListener("click", (event) => this._onAction(event, btn.dataset.action));
+      btn.addEventListener("click", (event) => this._onAction(event, btn.dataset.action, btn));
     }
+
+    document.removeEventListener("pointerdown", this._onDocumentPointerDown, true);
+    document.addEventListener("pointerdown", this._onDocumentPointerDown, true);
 
     // Drawer toggle buttons (hide and show)
     for (const toggleBtn of this.element.querySelectorAll(".ds-dock-toggle")) {
@@ -1135,13 +1146,187 @@ export class CombatDock {
   /* -------------------------------------------------- */
 
   /**
+   * Get the localized tracker visibility tooltip for a combatant or group.
+   * @param {boolean} hidden
+   * @returns {string}
+   */
+  _getVisibilityTooltip(hidden) {
+    return game.i18n.localize(`${MODULE_ID}.${hidden ? "ShowInTracker" : "HideInTracker"}`);
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Toggle the center-panel actions menu.
+   * @param {HTMLElement} target
+   */
+  _toggleActionsMenu(target) {
+    const menu = this.element?.querySelector(".ds-dock-menu");
+    if (!menu) return;
+
+    const isOpen = menu.classList.contains("ds-menu-open");
+    if (isOpen) {
+      menu.classList.remove("ds-menu-open");
+      return;
+    }
+
+    // .ds-combat-dock has backdrop-filter which makes it the containing block for
+    // position:fixed children. Coordinates must be relative to it, not the viewport.
+    const dockEl = this.element.querySelector(".ds-combat-dock") ?? this.element;
+    const dockRect = dockEl.getBoundingClientRect();
+    const center = this.element.querySelector(".ds-dock-center");
+    const centerRect = (center ?? target).getBoundingClientRect();
+
+    menu.style.left = `${centerRect.left - dockRect.left + centerRect.width / 2}px`;
+    menu.style.top = `${centerRect.bottom - dockRect.top}px`;
+    menu.classList.add("ds-menu-open");
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Dismiss the center actions menu when the user clicks outside it.
+   * @param {PointerEvent} event
+   */
+  _handleDocumentPointerDown(event) {
+    const menu = this.element?.querySelector(".ds-dock-menu");
+    if (!menu || !menu.classList.contains("ds-menu-open")) return;
+    if (event.target.closest?.(".ds-dock-menu-wrapper") || event.target.closest?.(".ds-dock-menu")) return;
+    this._hideActionsMenu();
+  }
+
+  /* -------------------------------------------------- */
+
+  /** Hide the center-panel actions menu if it is open. */
+  _hideActionsMenu() {
+    const menu = this.element?.querySelector(".ds-dock-menu");
+    if (menu) menu.classList.remove("ds-menu-open");
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
+   * Toggle tracker visibility for one combatant or every member of one group.
+   * @param {HTMLElement} target
+   */
+  async _toggleEntryVisibility(target) {
+    if (!game.user.isGM) return;
+
+    const { id, type } = target.dataset;
+    if (type === "group") {
+      const group = this.combat.groups.get(id);
+      if (!group) return;
+
+      const hidden = !group.hidden;
+      const updates = Array.from(group.members).map(member => ({ _id: member.id, hidden }));
+      if (updates.length) await group.parent.updateEmbeddedDocuments("Combatant", updates);
+      return;
+    }
+
+    const combatant = this.combat.combatants.get(id);
+    if (combatant) await combatant.update({ hidden: !combatant.hidden });
+  }
+
+  /* -------------------------------------------------- */
+
+  /** Toggle tracker visibility for all NPC combatants in this encounter. */
+  async _toggleNpcVisibility() {
+    if (!game.user.isGM) return;
+
+    const npcCombatants = this.combat.combatants.filter(combatant => (
+      combatant.actor &&
+      combatant.actor.type !== "hero" &&
+      !combatant.hasPlayerOwner
+    ));
+    if (!npcCombatants.length) return;
+
+    const hidden = npcCombatants.some(combatant => !combatant.hidden);
+    const updates = npcCombatants.map(combatant => ({ _id: combatant.id, hidden }));
+    await this.combat.updateEmbeddedDocuments("Combatant", updates);
+  }
+
+  /* -------------------------------------------------- */
+
+  /** Use Draw Steel's existing movement-history clearing methods where available. */
+  async _clearMovementHistories() {
+    if (!game.user.isGM) return;
+
+    if (typeof this.combat.clearMovementHistories === "function") {
+      await this.combat.clearMovementHistories();
+      return;
+    }
+
+    const operations = [];
+    const groupedIds = new Set();
+    for (const group of this.combat.groups) {
+      for (const member of group.members) groupedIds.add(member.id);
+      if (typeof group.clearMovementHistories === "function") operations.push(group.clearMovementHistories());
+    }
+
+    for (const combatant of this.combat.combatants) {
+      if (groupedIds.has(combatant.id)) continue;
+      if (typeof combatant.clearMovementHistories === "function") operations.push(combatant.clearMovementHistories());
+    }
+
+    if (!operations.length) {
+      ui.notifications?.warn(`${MODULE_ID}.Notifications.ClearMovementUnavailable`, { localize: true });
+      return;
+    }
+
+    await Promise.allSettled(operations);
+  }
+
+  /* -------------------------------------------------- */
+
+  /** Group the currently selected canvas tokens using Draw Steel's existing helper. */
+  async _groupSelectedTokens() {
+    if (!game.user.isGM) return;
+
+    const tokens = canvas?.tokens?.controlled?.map(token => token.document) ?? [];
+    if (!tokens.length) {
+      ui.notifications?.warn(`${MODULE_ID}.Notifications.NoSelectedTokens`, { localize: true });
+      return;
+    }
+
+    const CombatantGroup = CONFIG.CombatantGroup?.documentClass;
+    if (typeof CombatantGroup?.createFromTokens !== "function") {
+      ui.notifications?.warn(`${MODULE_ID}.Notifications.GroupSelectedUnavailable`, { localize: true });
+      return;
+    }
+
+    await CombatantGroup.createFromTokens(this.combat, tokens);
+  }
+
+  /* -------------------------------------------------- */
+
+  /**
    * Handle action button clicks (End Turn, Next/Prev Round, Close Combat).
    * @param {PointerEvent} event
    * @param {string} action
+   * @param {HTMLElement} target
    */
-  async _onAction(event, action) {
+  async _onAction(event, action, target) {
     event.preventDefault();
+    event.stopPropagation();
     switch (action) {
+      case "toggleActionsMenu":
+        this._toggleActionsMenu(target);
+        break;
+      case "toggleVisibility":
+        await this._toggleEntryVisibility(target);
+        break;
+      case "toggleNpcVisibility":
+        await this._toggleNpcVisibility();
+        this._hideActionsMenu();
+        break;
+      case "clearMovementHistories":
+        await this._clearMovementHistories();
+        this._hideActionsMenu();
+        break;
+      case "groupSelectedTokens":
+        await this._groupSelectedTokens();
+        this._hideActionsMenu();
+        break;
       case "endTurn":
         if (typeof this.combat.endTurn === "function") {
           await this.combat.endTurn();

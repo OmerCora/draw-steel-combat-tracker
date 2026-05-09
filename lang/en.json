@@ -9,6 +9,15 @@
     "Act": "Click to Act",
     "Restore": "Click to Restore",
     "Defeated": "Defeated",
+    "HideInTracker": "Hide in combat tracker",
+    "ShowInTracker": "Show in combat tracker",
+    "ActionsMenu": "Combat Tracker Actions",
+    "ToggleVisibilityForNPCs": "Toggle Visibility For NPCs",
+    "Notifications": {
+      "NoSelectedTokens": "Select one or more tokens to group.",
+      "GroupSelectedUnavailable": "Draw Steel's group selected tokens action is unavailable.",
+      "ClearMovementUnavailable": "Draw Steel's clear movement histories action is unavailable."
+    },
     "Status": {
       "Uninjured": "Uninjured",
       "Winded": "Winded",
