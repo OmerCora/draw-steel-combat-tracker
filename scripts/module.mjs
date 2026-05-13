@@ -247,7 +247,8 @@ Hooks.on("deleteCombatant", (combatant) => {
 Hooks.on("updateActor", (actor, changes) => {
   if (!ui.dsCombatDock) return;
   const combat = ui.dsCombatDock.combat;
-  const isInCombat = combat.combatants.some(c => c.actorId === actor.id);
+  // Match both linked actors (actorId) and unlinked synthetic token actors (c.actor.id)
+  const isInCombat = combat.combatants.some(c => c.actorId === actor.id || c.actor?.id === actor.id);
   if (isInCombat) ui.dsCombatDock.scheduleRefresh();
 
   // Auto-toggle defeated for monsters when stamina hits 0 or recovers (GM only)
@@ -256,7 +257,7 @@ Hooks.on("updateActor", (actor, changes) => {
   if (actor.hasPlayerOwner) return;
 
   for (const combatant of combat.combatants) {
-    if (combatant.actorId !== actor.id) continue;
+    if (combatant.actorId !== actor.id && combatant.actor?.id !== actor.id) continue;
     // Skip grouped minions — their death is handled by squad pool math
     if (combatant.actor?.isMinion && combatant.group) continue;
     const combatantStamina = combatant.actor?.system?.stamina?.value ?? 0;

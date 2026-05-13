@@ -442,19 +442,27 @@ export class CombatDock {
       // Group status text: GM sees raw stamina, players see status
       let staminaText = null;
       let staminaClass = "";
+      const isSquad = group.type === "squad";
       if (game.user.isGM) {
-        // GM: cumulative stamina for all groups
-        let sv = 0;
-        let sm = 0;
-        for (const member of group.members) {
-          const actor = member.actor;
-          if (!actor) continue;
-          const val = foundry.utils.getProperty(actor, "system.stamina.value");
-          const max = foundry.utils.getProperty(actor, "system.stamina.max");
-          if (val != null) sv += val;
-          if (max != null) sm += max;
+        // Squad groups: use the system's own pool fields (staminaValue / staminaMax)
+        if (isSquad) {
+          const sv = group.system?.staminaValue ?? 0;
+          const sm = group.system?.staminaMax ?? 0;
+          if (sm > 0) staminaText = `${sv}/${sm}`;
+        } else {
+          // Base groups: sum individual member staminas
+          let sv = 0;
+          let sm = 0;
+          for (const member of group.members) {
+            const actor = member.actor;
+            if (!actor) continue;
+            const val = foundry.utils.getProperty(actor, "system.stamina.value");
+            const max = foundry.utils.getProperty(actor, "system.stamina.max");
+            if (val != null) sv += val;
+            if (max != null) sm += max;
+          }
+          if (sm > 0) staminaText = `${sv}/${sm}`;
         }
-        if (sm > 0) staminaText = `${sv}/${sm}`;
       } else if (isParty) {
         // Players see party group stamina with temp and color
         let sv = 0;
